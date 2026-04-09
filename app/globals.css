@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+:root {
+  /* Colores del sistema de diseño */
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --primary: #6c63ff;
+  --accent: #a78bfa;
+  --text: #f0f0f5;
+  --muted: #6b7280;
+
+  /* Fuentes */
+  --font-display: var(--font-poppins);
+  --font-secondary: var(--font-nunito);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-primary: var(--primary);
+  --color-accent: var(--accent);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --font-display: var(--font-display);
+  --font-secondary: var(--font-secondary);
+}
+
+/* Reset básico */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-secondary);
+  background-color: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Efecto glow para el título */
+.glow-text {
+  text-shadow:
+    0 0 20px rgba(108, 99, 255, 0.4),
+    0 0 40px rgba(108, 99, 255, 0.2);
+}
