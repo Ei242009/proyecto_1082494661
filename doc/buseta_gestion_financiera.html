@@ -1,0 +1,664 @@
+
+<h2 class="sr-only">Sistema de gestión financiera para buseta — panel de operaciones, liquidación de turnos y reportes</h2>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); }
+.app { max-width: 480px; margin: 0 auto; padding: 0 0 80px; }
+.tab-bar { display: flex; border-bottom: 0.5px solid var(--color-border-tertiary); background: var(--color-background-primary); position: sticky; top: 0; z-index: 10; }
+.tab { flex: 1; padding: 12px 4px; text-align: center; font-size: 11px; color: var(--color-text-secondary); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+.tab.active { color: #185FA5; border-bottom: 2px solid #185FA5; font-weight: 500; }
+.tab-icon { font-size: 18px; display: block; margin-bottom: 2px; }
+.section { padding: 16px; display: none; }
+.section.active { display: block; }
+.page-title { font-size: 18px; font-weight: 500; margin-bottom: 4px; color: var(--color-text-primary); }
+.page-sub { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 20px; }
+.card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 16px; margin-bottom: 12px; }
+.card-title { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+.field-group { margin-bottom: 14px; }
+.field-label { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 5px; display: block; }
+.field-input { width: 100%; padding: 11px 14px; font-size: 16px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-secondary); color: var(--color-text-primary); }
+.field-input:focus { outline: none; border-color: #185FA5; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.metric-card { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 14px; }
+.metric-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 4px; }
+.metric-value { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+.metric-value.positive { color: #0F6E56; }
+.metric-value.negative { color: #993C1D; }
+.metric-value.info { color: #185FA5; }
+.btn-primary { width: 100%; padding: 15px; background: #185FA5; color: white; border: none; border-radius: var(--border-radius-md); font-size: 16px; font-weight: 500; cursor: pointer; margin-top: 8px; }
+.btn-primary:active { opacity: 0.85; }
+.btn-secondary { width: 100%; padding: 13px; background: transparent; color: #185FA5; border: 0.5px solid #185FA5; border-radius: var(--border-radius-md); font-size: 15px; font-weight: 500; cursor: pointer; margin-top: 8px; }
+.result-box { border-radius: var(--border-radius-md); padding: 14px; margin-top: 10px; }
+.result-box.blue { background: #E6F1FB; }
+.result-box.green { background: #EAF3DE; }
+.result-box.amber { background: #FAEEDA; }
+.result-label { font-size: 12px; font-weight: 500; margin-bottom: 4px; }
+.result-box.blue .result-label { color: #185FA5; }
+.result-box.green .result-label { color: #3B6D11; }
+.result-box.amber .result-label { color: #854F0B; }
+.result-amount { font-size: 26px; font-weight: 500; }
+.result-box.blue .result-amount { color: #0C447C; }
+.result-box.green .result-amount { color: #27500A; }
+.result-box.amber .result-amount { color: #633806; }
+.result-sub { font-size: 12px; margin-top: 2px; }
+.result-box.blue .result-sub { color: #185FA5; }
+.result-box.green .result-sub { color: #3B6D11; }
+.result-box.amber .result-sub { color: #854F0B; }
+.alert { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: var(--border-radius-md); margin-bottom: 10px; }
+.alert.warning { background: #FAEEDA; }
+.alert.danger { background: #FCEBEB; }
+.alert.success { background: #EAF3DE; }
+.alert-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.alert-text { font-size: 13px; }
+.alert.warning .alert-text { color: #633806; }
+.alert.danger .alert-text { color: #501313; }
+.alert.success .alert-text { color: #173404; }
+.alert-title { font-weight: 500; margin-bottom: 2px; }
+.toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.toggle-label { font-size: 14px; color: var(--color-text-primary); }
+.toggle-sub { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+.badge.blue { background: #E6F1FB; color: #185FA5; }
+.badge.green { background: #EAF3DE; color: #3B6D11; }
+.badge.amber { background: #FAEEDA; color: #854F0B; }
+.badge.red { background: #FCEBEB; color: #A32D2D; }
+.hist-item { padding: 12px 0; border-bottom: 0.5px solid var(--color-border-tertiary); display: flex; justify-content: space-between; align-items: center; }
+.hist-item:last-child { border-bottom: none; }
+.hist-left { flex: 1; }
+.hist-date { font-size: 13px; font-weight: 500; color: var(--color-text-primary); }
+.hist-detail { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
+.hist-right { text-align: right; }
+.hist-amount { font-size: 15px; font-weight: 500; color: #0C447C; }
+.hist-ganancia { font-size: 12px; color: #3B6D11; margin-top: 2px; }
+.divider { height: 0.5px; background: var(--color-border-tertiary); margin: 16px 0; }
+.km-warning { font-size: 12px; color: #A32D2D; margin-top: 4px; display: none; }
+.whatsapp-preview { background: #E1F5EE; border-radius: var(--border-radius-lg); padding: 16px; font-family: var(--font-mono); font-size: 12px; color: #085041; white-space: pre-wrap; line-height: 1.6; border: 0.5px solid #9FE1CB; }
+.chart-wrap { position: relative; width: 100%; height: 220px; margin-top: 8px; }
+.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.conductor-selector { display: flex; gap: 8px; margin-bottom: 16px; }
+.conductor-btn { flex: 1; padding: 10px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-secondary); color: var(--color-text-secondary); font-size: 14px; cursor: pointer; text-align: center; }
+.conductor-btn.selected { background: #E6F1FB; border-color: #185FA5; color: #185FA5; font-weight: 500; }
+.tarifa-highlight { background: #E6F1FB; border-radius: var(--border-radius-md); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.tarifa-highlight-label { font-size: 13px; color: #185FA5; font-weight: 500; }
+.tarifa-highlight-value { font-size: 20px; font-weight: 500; color: #0C447C; }
+</style>
+
+<div class="app">
+  <div class="tab-bar">
+    <div class="tab active" onclick="showTab('turno')"><span class="tab-icon">🚌</span>Turno</div>
+    <div class="tab" onclick="showTab('gastos')"><span class="tab-icon">🧾</span>Gastos</div>
+    <div class="tab" onclick="showTab('reportes')"><span class="tab-icon">📊</span>Reportes</div>
+    <div class="tab" onclick="showTab('alertas')"><span class="tab-icon">🔔</span>Alertas</div>
+    <div class="tab" onclick="showTab('config')"><span class="tab-icon">⚙️</span>Config</div>
+  </div>
+
+  <!-- TURNO -->
+  <div class="section active" id="sec-turno">
+    <div class="page-title">Registro de turno</div>
+    <div class="page-sub">Ingresa los datos del turno para liquidar</div>
+
+    <div class="card">
+      <div class="card-title">Conductor</div>
+      <div class="conductor-selector">
+        <div class="conductor-btn selected" id="btn-wilfrido" onclick="selectConductor('Wilfrido')">🧑‍✈️ Wilfrido</div>
+        <div class="conductor-btn" id="btn-socio" onclick="selectConductor('Socio')">👤 Socio</div>
+      </div>
+
+      <div class="tarifa-highlight">
+        <span class="tarifa-highlight-label">Tarifa diaria activa</span>
+        <span class="tarifa-highlight-value" id="tarifa-display">$0</span>
+      </div>
+
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label">KM inicial</label>
+          <input class="field-input" type="number" id="km-ini" placeholder="0" oninput="checkKm(); calcular()">
+          <div class="km-warning" id="km-warn">⚠️ No coincide con el turno anterior</div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">KM final</label>
+          <input class="field-input" type="number" id="km-fin" placeholder="0" oninput="calcular()">
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Recaudo total ($)</label>
+        <input class="field-input" type="number" id="recaudo" placeholder="0" oninput="calcular()">
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Gastos operativos — gasolina, etc. ($)</label>
+        <input class="field-input" type="number" id="gastos-op" placeholder="0" oninput="calcular()">
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Gastos del dueño descontados ($)</label>
+        <input class="field-input" type="number" id="gastos-dueno" placeholder="Repuestos, etc." oninput="calcular()">
+      </div>
+    </div>
+
+    <div id="resultado" style="display:none;">
+      <div class="result-box blue">
+        <div class="result-label">Entregar a Bianeidis</div>
+        <div class="result-amount" id="res-bianeidis">$0</div>
+        <div class="result-sub" id="res-bianeidis-det"></div>
+      </div>
+      <div class="result-box green" style="margin-top:8px;">
+        <div class="result-label">Ganancia del conductor</div>
+        <div class="result-amount" id="res-conductor">$0</div>
+        <div class="result-sub" id="res-conductor-det"></div>
+      </div>
+      <div class="result-box amber" style="margin-top:8px;">
+        <div class="result-label">Aporte al fondo de reserva</div>
+        <div class="result-amount" id="res-fondo">$0</div>
+        <div class="result-sub">Para mantenimiento preventivo</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <div class="card-title">Novedades del turno</div>
+      <div class="field-group">
+        <label class="field-label">Observaciones</label>
+        <textarea class="field-input" id="novedades" rows="2" placeholder="Describe cualquier novedad..."></textarea>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="guardarTurno()">✅ Guardar turno</button>
+  </div>
+
+  <!-- GASTOS -->
+  <div class="section" id="sec-gastos">
+    <div class="page-title">Gestión de gastos</div>
+    <div class="page-sub">Registra y clasifica los gastos del día</div>
+
+    <div class="card">
+      <div class="card-title">Nuevo gasto</div>
+      <div class="field-group">
+        <label class="field-label">Descripción</label>
+        <input class="field-input" type="text" id="gasto-desc" placeholder="Ej: Cambio de filtro de aceite">
+      </div>
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label">Monto ($)</label>
+          <input class="field-input" type="number" id="gasto-monto" placeholder="0">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Tipo</label>
+          <select class="field-input" id="gasto-tipo">
+            <option value="operativo">Operativo</option>
+            <option value="dueno">Del dueño</option>
+            <option value="reserva">Fondo reserva</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">📷 Foto del recibo</label>
+        <input class="field-input" type="file" accept="image/*" id="gasto-foto" style="padding:8px; font-size:13px;">
+      </div>
+      <button class="btn-primary" onclick="agregarGasto()">➕ Agregar gasto</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Gastos registrados hoy</div>
+      <div id="lista-gastos">
+        <div style="text-align:center; padding:20px; color:var(--color-text-secondary); font-size:13px;">Sin gastos registrados</div>
+      </div>
+      <div class="divider"></div>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:13px; font-weight:500; color:var(--color-text-secondary);">Total gastos</span>
+        <span style="font-size:18px; font-weight:500; color:#A32D2D;" id="total-gastos-hoy">$0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- REPORTES -->
+  <div class="section" id="sec-reportes">
+    <div class="page-title">Reportes</div>
+    <div class="page-sub">Análisis para Bianeidis</div>
+
+    <div class="metric-grid">
+      <div class="metric-card">
+        <div class="metric-label">Recaudo mes</div>
+        <div class="metric-value info" id="rpt-recaudo">$0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Entregado</div>
+        <div class="metric-value positive" id="rpt-entregado">$0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Fondo reserva</div>
+        <div class="metric-value" id="rpt-reserva">$0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">KM del mes</div>
+        <div class="metric-value" id="rpt-km">0</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Recaudo vs gastos — este mes</div>
+      <div class="chart-wrap">
+        <canvas id="chartBar" role="img" aria-label="Gráfica de barras comparando recaudo versus gastos por día del mes">Datos de recaudo y gastos del mes.</canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Resumen WhatsApp para Bianeidis</div>
+      <div class="whatsapp-preview" id="wa-preview">Guarda al menos un turno para generar el resumen.</div>
+      <button class="btn-secondary" onclick="copiarWA()">📋 Copiar mensaje</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Historial de turnos</div>
+      <div id="historial-turnos">
+        <div style="text-align:center; padding:20px; color:var(--color-text-secondary); font-size:13px;">Sin turnos registrados</div>
+      </div>
+    </div>
+
+    <button class="btn-secondary" onclick="exportarMes()">📥 Exportar cierre mensual</button>
+  </div>
+
+  <!-- ALERTAS -->
+  <div class="section" id="sec-alertas">
+    <div class="page-title">Alertas de activo</div>
+    <div class="page-sub">Control de documentos y mantenimiento</div>
+
+    <div class="card">
+      <div class="card-title">Estado de documentos</div>
+      <div id="alertas-docs"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Mantenimiento por KM</div>
+      <div id="alertas-km"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Actualizar KM actual</div>
+      <div class="field-group">
+        <label class="field-label">KM odómetro actual</label>
+        <input class="field-input" type="number" id="km-actual" placeholder="Ej: 125000">
+      </div>
+      <button class="btn-primary" onclick="actualizarKM()">📍 Actualizar</button>
+    </div>
+  </div>
+
+  <!-- CONFIG -->
+  <div class="section" id="sec-config">
+    <div class="page-title">⚙️ Configuración</div>
+    <div class="page-sub">Panel de Bianeidis — solo admin</div>
+
+    <div class="card">
+      <div class="card-title">Tarifa diaria</div>
+      <div class="field-group">
+        <label class="field-label">Tarifa base por día ($)</label>
+        <input class="field-input" type="number" id="cfg-tarifa" placeholder="0" style="font-size:22px; font-weight:500; color:#0C447C;">
+      </div>
+      <div style="font-size:12px; color:var(--color-text-secondary); margin-bottom:10px;">Esta tarifa determina cuánto le corresponde a Bianeidis diariamente.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Fondo de reserva</div>
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label">Monto fijo ($)</label>
+          <input class="field-input" type="number" id="cfg-reserva-fijo" placeholder="0">
+        </div>
+        <div class="field-group">
+          <label class="field-label">O porcentaje (%)</label>
+          <input class="field-input" type="number" id="cfg-reserva-pct" placeholder="0">
+        </div>
+      </div>
+      <div style="font-size:12px; color:var(--color-text-secondary);">Si ambos tienen valor, se usa el monto fijo.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Documentos y vencimientos</div>
+      <div class="field-group">
+        <label class="field-label">📄 Vencimiento SOAT</label>
+        <input class="field-input" type="date" id="cfg-soat">
+      </div>
+      <div class="field-group">
+        <label class="field-label">🔧 Vencimiento Tecnomecánica</label>
+        <input class="field-input" type="date" id="cfg-tecno">
+      </div>
+      <div class="field-group">
+        <label class="field-label">🛢️ KM del último cambio de aceite</label>
+        <input class="field-input" type="number" id="cfg-km-aceite" placeholder="Ej: 120000">
+      </div>
+      <div class="field-group">
+        <label class="field-label">KM actual del vehículo</label>
+        <input class="field-input" type="number" id="cfg-km-actual" placeholder="Ej: 124500">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">KM final del último turno</div>
+      <div class="field-group">
+        <label class="field-label">KM registrado (para validación)</label>
+        <input class="field-input" type="number" id="cfg-km-ultimo" placeholder="0">
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="guardarConfig()">💾 Guardar configuración</button>
+    <div id="cfg-msg" style="text-align:center; font-size:13px; color:#3B6D11; margin-top:10px; display:none;">✅ Configuración guardada</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+var state = {
+  conductor: 'Wilfrido',
+  config: { tarifa: 0, reservaFijo: 0, reservaPct: 0, soat: '', tecno: '', kmAceite: 0, kmActual: 0, kmUltimo: 0 },
+  turnos: [],
+  gastos: [],
+  chartBar: null
+};
+
+function loadState() {
+  try {
+    var saved = localStorage.getItem('buseta_state');
+    if (saved) { var s = JSON.parse(saved); state.config = s.config || state.config; state.turnos = s.turnos || []; state.gastos = s.gastos || []; }
+  } catch(e) {}
+  syncConfigUI();
+  actualizarTarifa();
+  renderHistorial();
+  renderGastos();
+  renderAlertas();
+  actualizarReportes();
+}
+
+function saveState() {
+  try { localStorage.setItem('buseta_state', JSON.stringify({ config: state.config, turnos: state.turnos, gastos: state.gastos })); } catch(e) {}
+}
+
+function showTab(t) {
+  document.querySelectorAll('.section').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  document.getElementById('sec-'+t).classList.add('active');
+  var tabs = { turno:0, gastos:1, reportes:2, alertas:3, config:4 };
+  document.querySelectorAll('.tab')[tabs[t]].classList.add('active');
+  if (t === 'reportes') { actualizarReportes(); setTimeout(renderChart, 100); }
+  if (t === 'alertas') renderAlertas();
+}
+
+function selectConductor(c) {
+  state.conductor = c;
+  document.getElementById('btn-wilfrido').classList.toggle('selected', c === 'Wilfrido');
+  document.getElementById('btn-socio').classList.toggle('selected', c === 'Socio');
+}
+
+function fmt(n) { return '$' + Math.round(n).toLocaleString('es-CO'); }
+
+function actualizarTarifa() {
+  document.getElementById('tarifa-display').textContent = fmt(state.config.tarifa);
+}
+
+function calcReserva(recaudo) {
+  if (state.config.reservaFijo > 0) return state.config.reservaFijo;
+  if (state.config.reservaPct > 0) return recaudo * state.config.reservaPct / 100;
+  return 0;
+}
+
+function calcular() {
+  var recaudo = parseFloat(document.getElementById('recaudo').value) || 0;
+  var gastosOp = parseFloat(document.getElementById('gastos-op').value) || 0;
+  var gastosDueno = parseFloat(document.getElementById('gastos-dueno').value) || 0;
+  var tarifa = state.config.tarifa;
+  var reserva = calcReserva(recaudo);
+  var tarifaEfectiva = Math.max(0, tarifa - gastosDueno);
+  var entregaBianeidis = tarifaEfectiva + reserva;
+  var gananciaConduc = recaudo - tarifa - gastosOp;
+  if (recaudo === 0) { document.getElementById('resultado').style.display = 'none'; return; }
+  document.getElementById('resultado').style.display = 'block';
+  document.getElementById('res-bianeidis').textContent = fmt(entregaBianeidis);
+  document.getElementById('res-bianeidis-det').textContent = 'Tarifa ' + fmt(tarifaEfectiva) + ' + Reserva ' + fmt(reserva);
+  document.getElementById('res-conductor').textContent = fmt(gananciaConduc);
+  document.getElementById('res-conductor-det').textContent = 'Recaudo ' + fmt(recaudo) + ' − Tarifa ' + fmt(tarifa) + ' − Gastos ' + fmt(gastosOp);
+  document.getElementById('res-fondo').textContent = fmt(reserva);
+}
+
+function checkKm() {
+  var kmIni = parseFloat(document.getElementById('km-ini').value) || 0;
+  var kmUlt = state.config.kmUltimo || 0;
+  var warn = document.getElementById('km-warn');
+  if (kmUlt > 0 && kmIni !== kmUlt) { warn.style.display = 'block'; } else { warn.style.display = 'none'; }
+}
+
+function guardarTurno() {
+  var recaudo = parseFloat(document.getElementById('recaudo').value) || 0;
+  var kmIni = parseFloat(document.getElementById('km-ini').value) || 0;
+  var kmFin = parseFloat(document.getElementById('km-fin').value) || 0;
+  var gastosOp = parseFloat(document.getElementById('gastos-op').value) || 0;
+  var gastosDueno = parseFloat(document.getElementById('gastos-dueno').value) || 0;
+  var novedades = document.getElementById('novedades').value;
+  if (!recaudo || !kmIni || !kmFin) { alert('Por favor completa KM y recaudo'); return; }
+  var tarifa = state.config.tarifa;
+  var reserva = calcReserva(recaudo);
+  var tarifaEfectiva = Math.max(0, tarifa - gastosDueno);
+  var entregaBianeidis = tarifaEfectiva + reserva;
+  var gananciaConduc = recaudo - tarifa - gastosOp;
+  var turno = {
+    fecha: new Date().toLocaleDateString('es-CO'),
+    conductor: state.conductor,
+    kmIni: kmIni, kmFin: kmFin,
+    km: kmFin - kmIni,
+    recaudo: recaudo,
+    gastosOp: gastosOp,
+    gastosDueno: gastosDueno,
+    reserva: reserva,
+    entregaBianeidis: entregaBianeidis,
+    gananciaConduc: gananciaConduc,
+    novedades: novedades
+  };
+  state.turnos.unshift(turno);
+  state.config.kmUltimo = kmFin;
+  state.config.kmActual = kmFin;
+  saveState();
+  document.getElementById('km-ini').value = '';
+  document.getElementById('km-fin').value = '';
+  document.getElementById('recaudo').value = '';
+  document.getElementById('gastos-op').value = '';
+  document.getElementById('gastos-dueno').value = '';
+  document.getElementById('novedades').value = '';
+  document.getElementById('resultado').style.display = 'none';
+  document.getElementById('cfg-km-ultimo').value = kmFin;
+  alert('✅ Turno guardado correctamente\n\nEntregar a Bianeidis: ' + fmt(entregaBianeidis) + '\nGanancia conductor: ' + fmt(gananciaConduc));
+}
+
+function agregarGasto() {
+  var desc = document.getElementById('gasto-desc').value;
+  var monto = parseFloat(document.getElementById('gasto-monto').value) || 0;
+  var tipo = document.getElementById('gasto-tipo').value;
+  if (!desc || !monto) { alert('Completa descripción y monto'); return; }
+  var g = { fecha: new Date().toLocaleDateString('es-CO'), desc: desc, monto: monto, tipo: tipo };
+  state.gastos.unshift(g);
+  saveState();
+  document.getElementById('gasto-desc').value = '';
+  document.getElementById('gasto-monto').value = '';
+  renderGastos();
+}
+
+function renderGastos() {
+  var lista = document.getElementById('lista-gastos');
+  var total = document.getElementById('total-gastos-hoy');
+  var hoy = new Date().toLocaleDateString('es-CO');
+  var gastosHoy = state.gastos.filter(function(g){ return g.fecha === hoy; });
+  if (!gastosHoy.length) { lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--color-text-secondary);font-size:13px;">Sin gastos registrados</div>'; total.textContent = '$0'; return; }
+  var sum = 0;
+  var html = '';
+  gastosHoy.forEach(function(g) {
+    sum += g.monto;
+    var cls = g.tipo === 'dueno' ? 'red' : g.tipo === 'reserva' ? 'amber' : 'blue';
+    var lbl = g.tipo === 'dueno' ? 'Dueño' : g.tipo === 'reserva' ? 'Reserva' : 'Operativo';
+    html += '<div class="hist-item"><div class="hist-left"><div class="hist-date">' + g.desc + '</div><div class="hist-detail">' + g.fecha + '</div></div><div class="hist-right"><span class="badge ' + cls + '">' + lbl + '</span><div class="hist-amount" style="margin-top:4px;">' + fmt(g.monto) + '</div></div></div>';
+  });
+  lista.innerHTML = html;
+  total.textContent = fmt(sum);
+}
+
+function renderHistorial() {
+  var cont = document.getElementById('historial-turnos');
+  if (!state.turnos.length) { cont.innerHTML = '<div style="text-align:center;padding:20px;color:var(--color-text-secondary);font-size:13px;">Sin turnos registrados</div>'; return; }
+  var html = '';
+  state.turnos.slice(0,10).forEach(function(t) {
+    html += '<div class="hist-item"><div class="hist-left"><div class="hist-date">' + t.fecha + ' — ' + t.conductor + '</div><div class="hist-detail">KM: ' + t.kmIni + ' → ' + t.kmFin + ' (' + t.km + ' km) · Recaudo: ' + fmt(t.recaudo) + '</div></div><div class="hist-right"><div class="hist-amount">' + fmt(t.entregaBianeidis) + '</div><div class="hist-ganancia">Conduc: ' + fmt(t.gananciaConduc) + '</div></div></div>';
+  });
+  cont.innerHTML = html;
+}
+
+function actualizarReportes() {
+  var totalRec = 0, totalEntr = 0, totalRes = 0, totalKM = 0;
+  state.turnos.forEach(function(t){ totalRec += t.recaudo; totalEntr += t.entregaBianeidis; totalRes += t.reserva; totalKM += t.km; });
+  document.getElementById('rpt-recaudo').textContent = fmt(totalRec);
+  document.getElementById('rpt-entregado').textContent = fmt(totalEntr);
+  document.getElementById('rpt-reserva').textContent = fmt(totalRes);
+  document.getElementById('rpt-km').textContent = Math.round(totalKM).toLocaleString('es-CO') + ' km';
+  generarWA();
+  renderHistorial();
+}
+
+function generarWA() {
+  if (!state.turnos.length) return;
+  var t = state.turnos[0];
+  var msg = '🚌 *REPORTE DIARIO BUSETA*\n';
+  msg += '━━━━━━━━━━━━━━━\n';
+  msg += '📅 Fecha: ' + t.fecha + '\n';
+  msg += '🧑‍✈️ Conductor: ' + t.conductor + '\n';
+  msg += '🛣️ KM recorridos: ' + t.km + ' km\n';
+  msg += '💵 Recaudo total: ' + fmt(t.recaudo) + '\n';
+  msg += '⛽ Gastos operativos: ' + fmt(t.gastosOp) + '\n';
+  msg += '━━━━━━━━━━━━━━━\n';
+  msg += '✅ *Entrega para Bianeidis:*\n';
+  msg += '   ' + fmt(t.entregaBianeidis) + '\n';
+  msg += '👤 Ganancia conductor: ' + fmt(t.gananciaConduc) + '\n';
+  msg += '🏦 Aporte reserva: ' + fmt(t.reserva) + '\n';
+  msg += '━━━━━━━━━━━━━━━\n';
+  if (t.novedades) msg += '📝 Novedad: ' + t.novedades + '\n';
+  document.getElementById('wa-preview').textContent = msg;
+}
+
+function copiarWA() {
+  var txt = document.getElementById('wa-preview').textContent;
+  navigator.clipboard.writeText(txt).then(function(){ alert('✅ Mensaje copiado. ¡Pégalo en WhatsApp!'); }).catch(function(){ alert('Selecciona el texto manualmente y cópialo'); });
+}
+
+function exportarMes() {
+  if (!state.turnos.length) { alert('No hay turnos para exportar'); return; }
+  var csv = 'Fecha,Conductor,KM Ini,KM Fin,KM Recorridos,Recaudo,Gastos Op,Gastos Dueño,Reserva,Entrega Bianeidis,Ganancia Conductor\n';
+  state.turnos.forEach(function(t){
+    csv += [t.fecha,t.conductor,t.kmIni,t.kmFin,t.km,t.recaudo,t.gastosOp,t.gastosDueno,t.reserva,t.entregaBianeidis,t.gananciaConduc].join(',') + '\n';
+  });
+  var blob = new Blob([csv], {type:'text/csv'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = 'cierre_mensual_buseta.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function renderChart() {
+  if (!window.Chart) return;
+  var canvas = document.getElementById('chartBar');
+  if (!canvas) return;
+  if (state.chartBar) { state.chartBar.destroy(); }
+  var turnos = state.turnos.slice(0,7).reverse();
+  var labels = turnos.map(function(t){ return t.fecha; });
+  var recaudos = turnos.map(function(t){ return t.recaudo; });
+  var gastos = turnos.map(function(t){ return t.gastosOp + t.gastosDueno; });
+  state.chartBar = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: labels.length ? labels : ['Sin datos'],
+      datasets: [
+        { label: 'Recaudo', data: recaudos.length ? recaudos : [0], backgroundColor: '#B5D4F4', borderRadius: 4 },
+        { label: 'Gastos', data: gastos.length ? gastos : [0], backgroundColor: '#F5C4B3', borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { size: 11 }, autoSkip: false, maxRotation: 30 }, grid: { display: false } },
+        y: { ticks: { callback: function(v){ return '$' + (v/1000).toFixed(0) + 'k'; }, font: { size: 11 } } }
+      }
+    }
+  });
+  var legend = document.getElementById('chart-legend');
+  if (legend) legend.style.display = 'flex';
+}
+
+function renderAlertas() {
+  var c = state.config;
+  var hoy = new Date();
+  var htmlDocs = '';
+  function diasHasta(fecha) {
+    if (!fecha) return null;
+    var d = new Date(fecha);
+    return Math.round((d - hoy) / 86400000);
+  }
+  function alertaDoc(nombre, fecha) {
+    var dias = diasHasta(fecha);
+    if (dias === null) return '<div class="alert warning"><span class="alert-icon">⚠️</span><div class="alert-text"><div class="alert-title">' + nombre + '</div><div>Sin fecha registrada</div></div></div>';
+    if (dias < 0) return '<div class="alert danger"><span class="alert-icon">🚨</span><div class="alert-text"><div class="alert-title">' + nombre + ' — VENCIDO</div><div>Venció hace ' + Math.abs(dias) + ' días</div></div></div>';
+    if (dias <= 30) return '<div class="alert warning"><span class="alert-icon">⚠️</span><div class="alert-text"><div class="alert-title">' + nombre + '</div><div>Vence en ' + dias + ' días</div></div></div>';
+    return '<div class="alert success"><span class="alert-icon">✅</span><div class="alert-text"><div class="alert-title">' + nombre + '</div><div>Vence en ' + dias + ' días</div></div></div>';
+  }
+  htmlDocs += alertaDoc('SOAT', c.soat);
+  htmlDocs += alertaDoc('Tecnomecánica', c.tecno);
+  document.getElementById('alertas-docs').innerHTML = htmlDocs;
+  var kmActual = parseFloat(c.kmActual) || 0;
+  var kmAceite = parseFloat(c.kmAceite) || 0;
+  var kmProxAceite = kmAceite + 5000;
+  var kmFaltaAceite = kmProxAceite - kmActual;
+  var htmlKm = '';
+  if (kmAceite === 0) {
+    htmlKm = '<div class="alert warning"><span class="alert-icon">🛢️</span><div class="alert-text"><div class="alert-title">Cambio de aceite</div><div>Configura el KM del último cambio</div></div></div>';
+  } else if (kmFaltaAceite <= 0) {
+    htmlKm = '<div class="alert danger"><span class="alert-icon">🛢️</span><div class="alert-text"><div class="alert-title">Cambio de aceite — REQUERIDO</div><div>Lleva ' + Math.abs(Math.round(kmFaltaAceite)).toLocaleString() + ' km de retraso</div></div></div>';
+  } else if (kmFaltaAceite <= 500) {
+    htmlKm = '<div class="alert warning"><span class="alert-icon">🛢️</span><div class="alert-text"><div class="alert-title">Cambio de aceite pronto</div><div>Faltan ' + Math.round(kmFaltaAceite).toLocaleString() + ' km</div></div></div>';
+  } else {
+    htmlKm = '<div class="alert success"><span class="alert-icon">🛢️</span><div class="alert-text"><div class="alert-title">Aceite al día</div><div>Próximo cambio en ' + Math.round(kmFaltaAceite).toLocaleString() + ' km (a ' + Math.round(kmProxAceite).toLocaleString() + ' km)</div></div></div>';
+  }
+  document.getElementById('alertas-km').innerHTML = htmlKm;
+}
+
+function actualizarKM() {
+  var km = parseFloat(document.getElementById('km-actual').value) || 0;
+  if (!km) { alert('Ingresa el KM actual'); return; }
+  state.config.kmActual = km;
+  saveState();
+  renderAlertas();
+  alert('KM actualizado: ' + Math.round(km).toLocaleString());
+}
+
+function syncConfigUI() {
+  var c = state.config;
+  document.getElementById('cfg-tarifa').value = c.tarifa || '';
+  document.getElementById('cfg-reserva-fijo').value = c.reservaFijo || '';
+  document.getElementById('cfg-reserva-pct').value = c.reservaPct || '';
+  document.getElementById('cfg-soat').value = c.soat || '';
+  document.getElementById('cfg-tecno').value = c.tecno || '';
+  document.getElementById('cfg-km-aceite').value = c.kmAceite || '';
+  document.getElementById('cfg-km-actual').value = c.kmActual || '';
+  document.getElementById('cfg-km-ultimo').value = c.kmUltimo || '';
+}
+
+function guardarConfig() {
+  state.config.tarifa = parseFloat(document.getElementById('cfg-tarifa').value) || 0;
+  state.config.reservaFijo = parseFloat(document.getElementById('cfg-reserva-fijo').value) || 0;
+  state.config.reservaPct = parseFloat(document.getElementById('cfg-reserva-pct').value) || 0;
+  state.config.soat = document.getElementById('cfg-soat').value;
+  state.config.tecno = document.getElementById('cfg-tecno').value;
+  state.config.kmAceite = parseFloat(document.getElementById('cfg-km-aceite').value) || 0;
+  state.config.kmActual = parseFloat(document.getElementById('cfg-km-actual').value) || 0;
+  state.config.kmUltimo = parseFloat(document.getElementById('cfg-km-ultimo').value) || 0;
+  saveState();
+  actualizarTarifa();
+  document.getElementById('cfg-msg').style.display = 'block';
+  setTimeout(function(){ document.getElementById('cfg-msg').style.display = 'none'; }, 2500);
+}
+
+loadState();
+</script>
