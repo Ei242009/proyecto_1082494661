@@ -44,6 +44,9 @@ export default function HolaMundo({ title, subtitle, description }: HolaMundoPro
         <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-primary glow-text">
           <AnimatedText text={title} />
         </h1>
+        <p className="mt-4 text-base md:text-lg text-muted">
+          Eider Jose Barreto Jimenez
+        </p>
       </motion.div>
 
       {/* Línea separadora animada */}
