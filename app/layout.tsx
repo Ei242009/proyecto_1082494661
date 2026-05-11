@@ -15,8 +15,8 @@ const nunito = Nunito({
 });
 
 export const metadata: Metadata = {
-  title: "Mi App TypeScript",
-  description: "Sistema fullstack funcionando correctamente.",
+  title: 'BusetaApp — Login',
+  description: 'Aplicación financiera mobile-first para el sector transporte informal.',
 };
 
 export default function RootLayout({

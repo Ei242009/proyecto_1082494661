@@ -10,26 +10,21 @@
 
 import fs from 'fs';
 import path from 'path';
-import { AppConfigSchema, HomeDataSchema } from './validators';
-import type { AppConfig, HomeData } from './types';
+import { AppConfigSchema, DailyConfigSchema, HomeDataSchema, SeedDataSchema } from './validators';
+import type {
+  AppConfig,
+  CreateShiftRequest,
+  DailyConfig,
+  HomeData,
+  SeedData,
+  SeedUser,
+  Shift,
+  UpdateDailyConfigRequest,
+} from './types';
 
 /**
  * Lee y parsea un archivo JSON desde la carpeta /data/
  * con tipado genérico estricto.
- * 
- * @template T — Tipo genérico de los datos a retornar
- * @param fileName — Nombre del archivo JSON (ej: 'config.json')
- * @returns Datos parseados con tipo T
- * 
- * @throws Error si el archivo no existe o no es JSON válido
- * 
- * @example
- * ```typescript
- * import { readJsonFile } from '@/lib/dataService';
- * import type { AppConfig } from '@/lib/types';
- * 
- * const config = await readJsonFile<AppConfig>('config.json');
- * ```
  */
 export async function readJsonFile<T>(fileName: string): Promise<T> {
   try {
@@ -44,12 +39,6 @@ export async function readJsonFile<T>(fileName: string): Promise<T> {
   }
 }
 
-/**
- * Función sincrónica alternativa para lecturas inmediatas
- * (útil en contextos donde await no está disponible)
- * 
- * ⚠️ Sincronía puede bloquear el event loop. Usar solo en startup.
- */
 export function readJsonFileSync<T>(fileName: string): T {
   try {
     const filePath = path.join(process.cwd(), 'data', fileName);
@@ -73,9 +62,166 @@ export async function readAppConfig(): Promise<AppConfig> {
   return AppConfigSchema.parse(raw);
 }
 
+export async function readSeedData(): Promise<SeedData> {
+  const raw = await readJsonFile<unknown>('seed.json');
+  return SeedDataSchema.parse(raw);
+}
+
+export async function findSeedUserByEmail(email: string): Promise<SeedUser | undefined> {
+  const seed = await readSeedData();
+  return seed.users.find((user) => user.email.toLowerCase() === email.toLowerCase());
+}
+
+export async function readSeedDailyConfig(): Promise<DailyConfig> {
+  const seed = await readSeedData();
+  return seed.daily_config;
+}
+
+function getShiftsFilePath(): string {
+  return path.join(process.cwd(), 'data', 'shifts.json');
+}
+
+function readShiftsFromFile(): Shift[] {
+  const filePath = getShiftsFilePath();
+
+  if (!fs.existsSync(filePath)) {
+    return [];
+  }
+
+  const raw = fs.readFileSync(filePath, 'utf8');
+  return JSON.parse(raw) as Shift[];
+}
+
+function writeShiftsToFile(shifts: Shift[]): void {
+  const filePath = getShiftsFilePath();
+  fs.writeFileSync(filePath, JSON.stringify(shifts, null, 2), 'utf8');
+}
+
+export async function getDailyConfig(): Promise<DailyConfig> {
+  return readSeedDailyConfig();
+}
+
+export async function updateDailyConfig(data: UpdateDailyConfigRequest): Promise<DailyConfig> {
+  const seed = await readSeedData();
+  const updated = {
+    ...seed.daily_config,
+    daily_fee: data.daily_fee,
+    expense_limit: data.expense_limit,
+  };
+
+  const filePath = path.join(process.cwd(), 'data', 'seed.json');
+  const updatedSeed: SeedData = {
+    ...seed,
+    daily_config: updated,
+  };
+
+  fs.writeFileSync(filePath, JSON.stringify(updatedSeed, null, 2), 'utf8');
+  return updated;
+}
+
+export async function getTodayShift(conductorId: string): Promise<Shift | null> {
+  const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Bogota' }).format(new Date());
+  const shifts = readShiftsFromFile();
+  return shifts.find((shift) => shift.conductor_id === conductorId && shift.shift_date === today) ?? null;
+}
+
+export async function getShiftById(id: string): Promise<Shift | null> {
+  const shifts = readShiftsFromFile();
+  return shifts.find((shift) => shift.id === id) ?? null;
+}
+
+export class ShiftExistsError extends Error {
+  public existingShift: Shift;
+
+  constructor(existingShift: Shift) {
+    super('Shift already exists for today');
+    this.existingShift = existingShift;
+  }
+}
+
+export async function createShift(conductorId: string, data: CreateShiftRequest): Promise<Shift> {
+  const config = await getDailyConfig();
+  const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Bogota' }).format(new Date());
+  const shifts = readShiftsFromFile();
+
+  const existing = shifts.find((shift) => shift.conductor_id === conductorId && shift.shift_date === today);
+  if (existing) {
+    throw new ShiftExistsError(existing);
+  }
+
+  const newShift: Shift = {
+    id: crypto.randomUUID(),
+    conductor_id: conductorId,
+    shift_date: today,
+    gross_income: data.gross_income,
+    daily_fee_snapshot: config.daily_fee,
+    status: 'ABIERTO',
+    closed_by: null,
+    closed_at: null,
+    created_at: new Date().toISOString(),
+  };
+
+  shifts.push(newShift);
+  writeShiftsToFile(shifts);
+  return newShift;
+}
+
+export async function getShiftByIdForUser(id: string, userId: string, role: string): Promise<Shift | null> {
+  const shift = await getShiftById(id);
+  if (!shift) return null;
+  if (role === 'conductor' && shift.conductor_id !== userId) {
+    return null;
+  }
+  return shift;
+}
+
+export async function isShiftClosed(shiftId: string): Promise<boolean> {
+  const shift = await getShiftById(shiftId);
+  return shift?.status === 'CERRADO';
+}
+
+export async function getPendingExpensesCount(): Promise<number> {
+  const mode = getSystemMode();
+
+  if (mode === 'seed') {
+    return 0;
+  }
+
+  // En modo live, esta función debe consultar la base de datos.
+  // Aquí se mantiene un stub hasta que el servicio Supabase esté disponible.
+  return 0;
+}
+
+export function getSystemMode(): 'seed' | 'live' | 'unknown' {
+  const hasSupabaseUrl = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim());
+  const seedFilePath = path.join(process.cwd(), 'data', 'seed.json');
+
+  if (hasSupabaseUrl && Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim())) {
+    return 'live';
+  }
+
+  if (fs.existsSync(seedFilePath)) {
+    return 'seed';
+  }
+
+  return 'unknown';
+}
+
 export default {
   readJsonFile,
   readJsonFileSync,
   readHomeData,
   readAppConfig,
+  readSeedData,
+  readSeedDailyConfig,
+  findSeedUserByEmail,
+  getDailyConfig,
+  updateDailyConfig,
+  getTodayShift,
+  getShiftById,
+  getShiftByIdForUser,
+  createShift,
+  isShiftClosed,
+  getPendingExpensesCount,
+  getSystemMode,
 };

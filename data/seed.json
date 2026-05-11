@@ -1,0 +1,15 @@
+{
+  "users": [
+    {
+      "id": "admin-1",
+      "email": "propietaria@busetaapp.app",
+      "password_hash": "$2a$10$biLk6xJRyHD45/ha3sjyie1GXO6jDB9AFd6xxrRV.2qb65oah8ZqW",
+      "name": "Bianeidis (Propietaria)",
+      "role": "admin"
+    }
+  ],
+  "daily_config": {
+    "daily_fee": 80000,
+    "expense_limit": 200000
+  }
+}

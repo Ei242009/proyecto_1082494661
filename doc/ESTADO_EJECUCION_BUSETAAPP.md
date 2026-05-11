@@ -15,7 +15,7 @@
 | **Documento** | 1082494661 |
 | **Curso** | Lógica y Programación — SIST0200 |
 | **Fecha de inicio planificada** | 4 de mayo de 2026 |
-| **Estado general** | Pendiente (Fase 0 sin ejecutar) |
+| **Estado general** | En progreso (Fase 2 activa) |
 | **Stack** | Next.js + TypeScript + Supabase Postgres + Vercel Blob + Resend + Vercel |
 | **Archivos de referencia** | `doc/PLAN_BUSETAAPP.md`, `doc/PROMPTS_BUSETAAPP.md` |
 
@@ -25,8 +25,8 @@
 
 | # | Fase | Rol asignado | Estado | Inicio | Cierre | Resumen |
 |---|---|---|---|---|---|---|
-| 1 | Bootstrap, Login y `dataService` base | Ingeniero Fullstack Senior — Arquitecto del sistema, auth y notificaciones | Pendiente | — | — | — |
-| 2 | Dashboard, Layout Mobile-First y bootstrap | Diseñador Frontend Obsesivo + Ingeniero de Sistemas | Pendiente | — | — | — |
+| 1 | Bootstrap, Login y `dataService` base | Ingeniero Fullstack Senior — Arquitecto del sistema, auth y notificaciones | Completada | 2026-05-11 | 2026-05-11 | doc/RESUMEN_FASE_1_BOOTSTRAP.md |
+| 2 | Dashboard, Layout Mobile-First y bootstrap | Diseñador Frontend Obsesivo + Ingeniero de Sistemas | En progreso | 2026-05-11 | — | — |
 | 3 | Configuración y Módulo de Turnos | Ingeniero Fullstack — Ciclo del turno diario y snapshot de tarifa | Pendiente | — | — | — |
 | 4 | Gastos y Flujo de Aprobación | Ingeniero Fullstack — Estados de gastos, aprobación y alertas | Pendiente | — | — | — |
 | 5 | Cierre de Turno y Comprobante Digital | Ingeniero Fullstack — Liquidación, comprobante Mobile-First e impresión | Pendiente | — | — | — |
@@ -55,6 +55,9 @@
 [2026-05-04 --:--] PROYECTO | CREACIÓN | Archivo de estado generado inicialmente por Ingeniero de Proyectos
 [2026-05-04 --:--] PROYECTO | REFERENCIAS | Plan maestro y prompts completados en doc/
 [2026-05-04 --:--] PROYECTO | ESTADO | Listo para comenzar Fase 1 - Bootstrap, Login y dataService base
+[2026-05-11 10:00] FASE 1 | INICIO | Se inicia la implementación de Bootstrap, autenticación JWT, login de seed y servicios de correo.
+[2026-05-11 11:20] FASE 1 | CIERRE | Fase 1 completada: login seed, JWT, sistema seed y envío de correo Resend listos.
+[2026-05-11 11:20] FASE 2 | INICIO | Se inicia la implementación del dashboard mobile-first con navegación por rol y bootstrap admin.
 ```
 
 ---
