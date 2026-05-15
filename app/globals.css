@@ -49,3 +49,17 @@ body {
     0 0 20px rgba(108, 99, 255, 0.4),
     0 0 40px rgba(108, 99, 255, 0.2);
 }
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .print-safe {
+    box-shadow: none !important;
+    border: none !important;
+  }
+}

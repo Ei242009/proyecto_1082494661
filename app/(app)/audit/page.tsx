@@ -1,8 +1,10 @@
+import type { AuditShiftRow } from '@/types/client';
+
 async function fetchAudit() {
   const response = await fetch('/api/audit', { cache: 'no-store' });
   if (!response.ok) return [];
   const json = await response.json();
-  return json.data || [];
+  return json.data as AuditShiftRow[] || [];
 }
 
 export default async function AuditPage() {
@@ -19,11 +21,11 @@ export default async function AuditPage() {
               No hay datos de auditoría disponibles.
             </div>
           ) : (
-            auditItems.map((item: any, index: number) => (
+            auditItems.map((item: AuditShiftRow, index: number) => (
               <div key={index} className="rounded-3xl border border-stone-200 bg-amber-50 p-4">
                 <p className="text-sm text-stone-500">{item.date}</p>
-                <p className="mt-2 text-lg font-semibold text-stone-900">{item.conductor}</p>
-                <p className="mt-1 text-sm text-stone-700">Ingreso bruto: ${item.gross.toLocaleString('es-CO')}</p>
+                <p className="mt-2 text-lg font-semibold text-stone-900">{item.conductor_name}</p>
+                <p className="mt-1 text-sm text-stone-700">Ingreso bruto: {formatCurrency(item.gross_income)}</p>
               </div>
             ))
           )}

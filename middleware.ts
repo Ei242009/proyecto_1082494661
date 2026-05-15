@@ -1,7 +1,14 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { verifyUserJwt } from '@/lib/auth';
 
-const socioAllowedPaths = ['/audit', '/profile', '/api/audit'];
+const socioAllowedPaths = [
+  '/audit',
+  '/profile',
+  '/api/audit',
+  '/api/auth/me',
+  '/api/auth/logout',
+  '/api/auth/change-password',
+];
 
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get('buseta_session')?.value;

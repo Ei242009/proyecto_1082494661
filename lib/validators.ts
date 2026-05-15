@@ -52,9 +52,21 @@ export const LoginRequestSchema = z.object({
   password: z.string().min(8),
 });
 
+export const AddExpenseRequestSchema = z.object({
+  category: z.string().min(1),
+  amount: z.number().positive(),
+  description: z.string().min(3),
+});
+
+export const RejectExpenseRequestSchema = z.object({
+  reason: z.string().min(5),
+});
+
 export type HomeDataZod = z.infer<typeof HomeDataSchema>;
 export type AppConfigZod = z.infer<typeof AppConfigSchema>;
 export type SeedDataZod = z.infer<typeof SeedDataSchema>;
 export type LoginRequestZod = z.infer<typeof LoginRequestSchema>;
 export type CreateShiftRequestZod = z.infer<typeof CreateShiftRequestSchema>;
 export type UpdateDailyConfigRequestZod = z.infer<typeof UpdateDailyConfigSchema>;
+export type AddExpenseRequestZod = z.infer<typeof AddExpenseRequestSchema>;
+export type RejectExpenseRequestZod = z.infer<typeof RejectExpenseRequestSchema>;

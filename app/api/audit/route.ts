@@ -1,10 +1,20 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/lib/withAuth';
+import { withRole } from '@/lib/withRole';
+import { getAuditShifts } from '@/lib/dataService';
 
-const auditData = [
-  { date: '2026-05-11', conductor: 'Wilfrido', gross: 320000, daily_fee: 80000, status: 'CERRADO' },
-  { date: '2026-05-10', conductor: 'Wilfrido', gross: 280000, daily_fee: 80000, status: 'CERRADO' },
-];
+async function handler(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const from = searchParams.get('from') || undefined;
+  const to = searchParams.get('to') || undefined;
 
-export async function GET() {
-  return NextResponse.json({ data: auditData }, { headers: { 'Cache-Control': 'no-store' } });
+  try {
+    const data = await getAuditShifts({ from, to });
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('Error fetching audit shifts:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }
+
+export const GET = withAuth(withRole(['admin', 'socio'], handler));

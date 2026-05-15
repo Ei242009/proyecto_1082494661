@@ -731,5 +731,6 @@ lib/
  
  - - - 
  
- [ 2 0 2 6 - 0 4 - 0 9   1 7 : 2 0 ]   |   P R O Y E C T O   |   C E R R A D O   |   S i s t e m a   F u l l s t a c k   T y p e S c r i p t   +   V e r c e l   +   G i t H u b   A c t i o n s   c e r t i f i c a d o   y   f u n c i o n a n d o   e n   p r o d u c c i ó n .   U R L :   h t t p s : / / p r o y e c t o - 1 0 8 2 4 9 4 6 6 1 . v e r c e l . a p p .   7   f a s e s   c o m p l e t a d a s .   A r c h i v o s   d e   r e s u m e n   g e n e r a d o s :   R E S U M E N _ F A S E _ 1   a   R E S U M E N _ F A S E _ 7 .  
+ [ 2 0 2 6 - 0 4 - 0 9   1 7 : 2 0 ]   |   P R O Y E C T O   |   C E R R A D O   |   S i s t e m a   F u l l s t a c k   T y p e S c r i p t   +   V e r c e l   +   G i t H u b   A c t i o n s   c e r t i f i c a d o   y   f u n c i o n a n d o   e n   p r o d u c c i ï¿½ n .   U R L :   h t t p s : / / p r o y e c t o - 1 0 8 2 4 9 4 6 6 1 . v e r c e l . a p p .   7   f a s e s   c o m p l e t a d a s .   A r c h i v o s   d e   r e s u m e n   g e n e r a d o s :   R E S U M E N _ F A S E _ 1   a   R E S U M E N _ F A S E _ 7 . 
+ 
  

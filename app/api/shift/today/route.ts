@@ -15,6 +15,10 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
   }
 
+  if (user.role === 'socio') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
+  }
+
   const shift = await getTodayShift(user.userId);
   return NextResponse.json({ shift }, { headers: { 'Cache-Control': 'no-store' } });
 }

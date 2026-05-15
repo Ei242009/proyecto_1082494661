@@ -15,7 +15,7 @@
 | **Documento** | 1082494661 |
 | **Curso** | Lógica y Programación — SIST0200 |
 | **Fecha de inicio planificada** | 4 de mayo de 2026 |
-| **Estado general** | En progreso (Fase 2 activa) |
+| **Estado general** | En progreso (Fase 7 activa) |
 | **Stack** | Next.js + TypeScript + Supabase Postgres + Vercel Blob + Resend + Vercel |
 | **Archivos de referencia** | `doc/PLAN_BUSETAAPP.md`, `doc/PROMPTS_BUSETAAPP.md` |
 
@@ -26,12 +26,12 @@
 | # | Fase | Rol asignado | Estado | Inicio | Cierre | Resumen |
 |---|---|---|---|---|---|---|
 | 1 | Bootstrap, Login y `dataService` base | Ingeniero Fullstack Senior — Arquitecto del sistema, auth y notificaciones | Completada | 2026-05-11 | 2026-05-11 | doc/RESUMEN_FASE_1_BOOTSTRAP.md |
-| 2 | Dashboard, Layout Mobile-First y bootstrap | Diseñador Frontend Obsesivo + Ingeniero de Sistemas | En progreso | 2026-05-11 | — | — |
-| 3 | Configuración y Módulo de Turnos | Ingeniero Fullstack — Ciclo del turno diario y snapshot de tarifa | Pendiente | — | — | — |
-| 4 | Gastos y Flujo de Aprobación | Ingeniero Fullstack — Estados de gastos, aprobación y alertas | Pendiente | — | — | — |
-| 5 | Cierre de Turno y Comprobante Digital | Ingeniero Fullstack — Liquidación, comprobante Mobile-First e impresión | Pendiente | — | — | — |
-| 6 | Reportes, Auditoría del Socio y Administración | Ingeniero Fullstack Senior + Diseñador Frontend — Reportes y acceso del socio | Pendiente | — | — | — |
-| 7 | Pulido final y Deploy | Diseñador Frontend Obsesivo + Ingeniero Fullstack — Cierre del proyecto | Pendiente | — | — | — |
+| 2 | Dashboard, Layout Mobile-First y bootstrap | Diseñador Frontend Obsesivo + Ingeniero de Sistemas | Completada | 2026-05-11 | 2026-05-11 | doc/RESUMEN_FASE_2_DASHBOARD.md |
+| 3 | Configuración y Módulo de Turnos | Ingeniero Fullstack — Ciclo del turno diario y snapshot de tarifa | Completada | 2026-05-11 | 2026-05-11 | — |
+| 4 | Gastos y Flujo de Aprobación | Ingeniero Fullstack — Estados de gastos, aprobación y alertas | Completada | 2026-05-11 | 2026-05-11 | doc/RESUMEN_FASE_4_GASTOS.md |
+| 5 | Cierre de Turno y Comprobante Digital | Ingeniero Fullstack — Liquidación, comprobante Mobile-First e impresión | Completada | 2026-05-11 | 2026-05-11 | doc/RESUMEN_FASE_5_LIQUIDACION.md |
+| 6 | Reportes, Auditoría del Socio y Administración | Ingeniero Fullstack Senior + Diseñador Frontend — Reportes y acceso del socio | Completada | 2026-05-14 | 2026-05-14 | doc/RESUMEN_FASE_6_REPORTES.md |
+| 7 | Pulido final y Deploy | Diseñador Frontend Obsesivo + Ingeniero Fullstack — Cierre del proyecto | En progreso | 2026-05-14 | — | — |
 
 ---
 
@@ -58,6 +58,15 @@
 [2026-05-11 10:00] FASE 1 | INICIO | Se inicia la implementación de Bootstrap, autenticación JWT, login de seed y servicios de correo.
 [2026-05-11 11:20] FASE 1 | CIERRE | Fase 1 completada: login seed, JWT, sistema seed y envío de correo Resend listos.
 [2026-05-11 11:20] FASE 2 | INICIO | Se inicia la implementación del dashboard mobile-first con navegación por rol y bootstrap admin.
+[2026-05-11 12:20] FASE 2 | CIERRE | Fase 2 completada: dashboard mobile-first y PendingBadge listos.
+[2026-05-11 12:25] FASE 3 | CIERRE | Fase 3 completada: módulo de turnos y snapshot de tarifa operativos.
+[2026-05-11 12:30] FASE 4 | INICIO | Se inicia la implementación de gastos y flujo de aprobación con envíos de correo y estado pendiente.
+[2026-05-11 13:20] FASE 4 | CIERRE | Fase 4 completada: gastos móviles, estado pendiente y aprobación/rechazo implementados.
+[2026-05-11 13:25] FASE 5 | INICIO | Se inicia la implementación del cierre de turno y comprobante de liquidación imprimible.
+[2026-05-11 14:00] FASE 5 | CIERRE | Fase 5 completada: cierre de turno y comprobante digital operativos.
+[2026-05-14 10:00] FASE 6 | INICIO | Se inicia la implementación de reportes, auditoría del socio y administración de usuarios.
+[2026-05-14 11:00] FASE 6 | CIERRE | Fase 6 completada: reportes financieros, auditoría del socio y gestión de usuarios implementados.
+[2026-05-14 12:00] FASE 7 | INICIO | Se inicia el pulido final: empty states, manejo de errores, verificación mobile y deploy en producción.
 ```
 
 ---
@@ -191,13 +200,14 @@ RESEND_FROM_EMAIL
 ## PRÓXIMOS PASOS
 
 1. ✅ Archivo de estado creado — Fase 0 completada
-2. ▶️ **Ejecutar PROMPT FASE 1** — Bootstrap, Login y `dataService` base
-3. Esperar resumen de Fase 1
-4. Continuar con Fase 2
+2. ✅ Fase 1 completada — Bootstrap, Login y `dataService` base
+3. ✅ Fase 2 completada — Dashboard y Layout Mobile-First
+4. ✅ Fase 3 completada — Configuración y Turnos
+5. ▶️ **Fase 4 en progreso** — Gastos, aprobación y notificaciones
 
 ---
 
-> **Estado actual:** Listo para comenzar Fase 1
+> **Estado actual:** En progreso (Fase 4 activa)
 > **Fecha de creación:** 4 de mayo de 2026
 > **Ingeniero de Proyectos:** Sistema de seguimiento automático
 

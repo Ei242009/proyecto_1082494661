@@ -47,7 +47,7 @@ export default async function ShiftPage() {
           </div>
         </section>
       ) : (
-        <StartShiftForm dailyFee={config.daily_fee} />
+        <StartShiftForm dailyFee={config.daily_fee} userName={user?.name} />
       )}
     </main>
   );

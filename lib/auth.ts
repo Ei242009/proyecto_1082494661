@@ -30,6 +30,7 @@ export async function verifyUserJwt(token: string): Promise<JwtUser> {
     userId: String(payload.userId),
     role: String(payload.role) as JwtUser['role'],
     email: String(payload.email),
+    mustChangePassword: Boolean(payload.mustChangePassword),
   };
 }
 
@@ -42,5 +43,6 @@ export function parseJwtPayload(payload: JWTPayload): JwtUser {
     userId: String(payload.userId),
     role: String(payload.role) as JwtUser['role'],
     email: String(payload.email),
+    mustChangePassword: Boolean(payload.mustChangePassword),
   };
 }

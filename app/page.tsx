@@ -39,7 +39,7 @@ export default function Home() {
 
       setStatus('success');
       setMessage('Inicio de sesión exitoso. La cookie HttpOnly se ha enviado correctamente.');
-    } catch (error) {
+    } catch {
       setStatus('error');
       setMessage('Error de conexión con el servidor.');
     }

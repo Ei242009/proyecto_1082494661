@@ -18,6 +18,7 @@ const navItems: NavItem[] = [
   { href: '/turno', label: 'Turno', icon: '⏱️', role: ['conductor'] },
   { href: '/gastos', label: 'Gastos', icon: '🧾', role: ['conductor'] },
   { href: '/dashboard', label: 'Dashboard', icon: '📊', role: ['admin'] },
+  { href: '/reports', label: 'Reportes', icon: '📈', role: ['admin'] },
   { href: '/pendientes', label: 'Pendientes', icon: '🔔', role: ['admin'], badge: true },
   { href: '/turnos', label: 'Turnos', icon: '📋', role: ['admin'] },
   { href: '/config', label: 'Config', icon: '⚙️', role: ['admin'] },

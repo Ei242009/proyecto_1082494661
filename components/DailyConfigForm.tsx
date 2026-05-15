@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { formatCurrency } from '@/lib/dateUtils';
 
 interface Props {
   initialDailyFee: number;
@@ -33,6 +32,13 @@ export default function DailyConfigForm({ initialDailyFee, initialExpenseLimit }
 
     if (!response.ok) {
       setStatus('error');
+      if (response.status === 401) {
+        setMessage('Tu sesión expiró. Redirigiendo a login...');
+        window.setTimeout(() => {
+          window.location.href = '/login';
+        }, 1200);
+        return;
+      }
       setMessage(data.error || 'No se pudo actualizar la configuración.');
       return;
     }
