@@ -11,14 +11,20 @@
     "validate": "npm run typecheck && npm run lint"
   },
   "dependencies": {
+    "@vercel/blob": "^0.20.1",
+    "bcryptjs": "^2.4.3",
     "framer-motion": "^12.38.0",
+    "jsonwebtoken": "^9.1.2",
     "next": "16.2.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "resend": "^3.0.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^20.19.39",
     "@types/react": "^19",
     "@types/react-dom": "^19",

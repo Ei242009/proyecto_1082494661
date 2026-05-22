@@ -1,7 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  /* Colores del sistema de diseño */
+  /* Identidad Visual BusetaApp - Ámbar Colombiano */
+  --amber-dark: #78350F;      /* Ámbar oscuro - fondo principal */
+  --amber-bright: #F59E0B;    /* Ámbar brillante - accento, bordes */
+  --white: #FFFFFF;           /* Blanco - tarjeta, texto */
+  --gray-dark: #1F2937;       /* Gris oscuro - texto principal */
+  --gray-medium: #6B7280;     /* Gris medio - texto secundario */
+
+  /* Sistema de diseño heredado */
   --bg: #0a0a0f;
   --surface: #12121a;
   --primary: #6c63ff;
@@ -41,6 +48,12 @@ body {
   background-color: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Clase para fondo ámbar de BusetaApp */
+.busetaapp-background {
+  background-color: #78350F;
+  background-image: linear-gradient(135deg, #78350F 0%, #5a2508 100%);
 }
 
 /* Efecto glow para el título */

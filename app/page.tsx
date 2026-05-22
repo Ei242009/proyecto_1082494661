@@ -1,23 +1,28 @@
-import { readHomeData } from '@/lib/dataService';
-import HolaMundo from '@/components/HolaMundo';
 import type { Metadata } from 'next';
+import { LoginForm } from '@/components/LoginForm';
 
-export async function generateMetadata(): Promise<Metadata> {
-  const homeData = await readHomeData();
-  return {
-    title: homeData.meta.pageTitle,
-    description: homeData.meta.description,
-  };
-}
+export const metadata: Metadata = {
+  title: 'BusetaApp — Login',
+  description: 'Autenticación segura para gestión financiera de conductores',
+};
 
-export default async function Home() {
-  const homeData = await readHomeData();
-
+/**
+ * Home Page — Login Screen
+ * Identidad visual ámbar (#78350F), tarjeta blanca, logo SVG de buseta
+ * Modo seed: datos de prueba disponibles
+ */
+export default function Home() {
   return (
-    <HolaMundo
-      title={homeData.hero.title}
-      subtitle={homeData.hero.subtitle}
-      description={homeData.hero.description}
-    />
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#78350F' }}>
+      {/* Background pattern - opcional */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-400 to-amber-600" />
+      </div>
+
+      {/* Content */}
+      <div className="relative w-full px-4">
+        <LoginForm />
+      </div>
+    </div>
   );
 }
