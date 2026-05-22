@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { formatCurrency } from '@/helpers/formatCurrency';
 
 interface Props {
   shiftId: string;
@@ -75,7 +76,7 @@ export default function CloseShiftPanel({ shiftId }: Props) {
       {pendingInfo ? (
         <div className="mt-6 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           <p className="font-semibold">Advertencia:</p>
-          <p>Hay {pendingInfo.pendingCount} gasto(s) pendiente(s) por un total de {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(pendingInfo.pendingTotal)}.</p>
+          <p>Hay {pendingInfo.pendingCount} gasto(s) pendiente(s) por un total de {formatCurrency(pendingInfo.pendingTotal)}.</p>
           <p>Si cierras ahora, estos gastos quedarán excluidos del cálculo final.</p>
           <div className="mt-4 flex gap-3 flex-col sm:flex-row">
             <button

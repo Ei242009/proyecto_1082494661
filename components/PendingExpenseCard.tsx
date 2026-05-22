@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import type { ExpenseWithShift } from '@/types/client';
+import { formatCurrency } from '@/helpers/formatCurrency';
 
 interface Props {
   expense: ExpenseWithShift;
@@ -76,7 +77,7 @@ export default function PendingExpenseCard({ expense, onApprove, onReject }: Pro
       </div>
 
       <div className="mt-4 flex items-center justify-between gap-3">
-        <p className="text-2xl font-semibold text-stone-900">{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(expense.amount)}</p>
+        <p className="text-2xl font-semibold text-stone-900">{formatCurrency(expense.amount)}</p>
         <span className="rounded-full bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-900">{expense.status}</span>
       </div>
 

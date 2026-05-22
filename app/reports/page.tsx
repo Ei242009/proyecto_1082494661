@@ -4,28 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import type { DashboardData } from '@/types/client';
 import { formatCurrency } from '@/helpers/formatCurrency';
 
-interface KpiCardProps {
-  title: string;
-  value: string;
-  color: 'green' | 'red' | 'blue' | 'gray';
-}
-
-function KpiCard({ title, value, color }: KpiCardProps) {
-  const colorClasses = {
-    green: 'text-green-600',
-    red: 'text-red-600',
-    blue: 'text-blue-600',
-    gray: 'text-gray-600',
-  };
-
-  return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h3 className="text-sm font-medium text-gray-500 mb-2">{title}</h3>
-      <p className={`text-2xl font-bold ${colorClasses[color]}`}>{value}</p>
-    </div>
-  );
-}
-
 export default function ReportsPage() {
   const [period, setPeriod] = useState<'day' | 'week' | 'month'>('day');
   const [data, setData] = useState<DashboardData | null>(null);
@@ -68,98 +46,87 @@ export default function ReportsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">Reportes Financieros</h1>
-          <div className="text-center">Cargando...</div>
+      <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
+        <div className="rounded-[20px] border border-stone-200 bg-white p-5 shadow-sm text-center">
+          <p className="text-sm text-stone-600">Cargando reportes...</p>
         </div>
-      </div>
+      </main>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">Reportes Financieros</h1>
-          <div className="text-center text-red-600">Error: {error}</div>
+      <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
+        <div className="rounded-[20px] border border-rose-200 bg-rose-50 p-5 shadow-sm">
+          <p className="text-sm text-rose-700">Error: {error}</p>
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Reportes Financieros</h1>
-
-        {/* Period Selector */}
-        <div className="mb-8">
-          <div className="flex space-x-1 bg-gray-200 p-1 rounded-lg w-fit">
-            {(['day', 'week', 'month'] as const).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  period === p
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                {periodLabels[p]}
-              </button>
-            ))}
-          </div>
+    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
+      <section className="mb-6 rounded-[20px] border border-stone-200 bg-white p-5 shadow-sm">
+        <div>
+          <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Reportes</p>
+          <h1 className="mt-2 text-2xl font-semibold text-stone-900">Financieros</h1>
         </div>
+      </section>
 
-        {/* KPIs */}
-        {data && data.closedShiftsCount > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            <KpiCard
-              title="Ingresos Brutos Totales"
-              value={formatCurrency(data.totalGrossIncome)}
-              color="blue"
-            />
-            <KpiCard
-              title="Tarifas Diarias Cobradas"
-              value={formatCurrency(data.totalDailyFee)}
-              color="blue"
-            />
-            <KpiCard
-              title="Gastos Aprobados"
-              value={formatCurrency(data.totalApprovedExpenses)}
-              color="red"
-            />
-            <KpiCard
-              title="Utilidad Neta Acumulada"
-              value={formatCurrency(data.netIncome)}
-              color={data.netIncome >= 0 ? 'green' : 'red'}
-            />
-            <KpiCard
-              title="Turnos Cerrados"
-              value={data.closedShiftsCount.toString()}
-              color="gray"
-            />
-            <KpiCard
-              title="Gastos Pendientes"
-              value={data.pendingExpensesCount.toString()}
-              color="red"
-            />
-          </div>
-        ) : (
-          <div className="bg-white p-8 rounded-lg shadow-md text-center mb-8">
-            <div className="text-4xl text-gray-300 mb-4">📊</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No hay turnos cerrados en este período</h3>
-            <p className="text-sm text-gray-500">Los datos aparecen aquí cuando la propietaria cierra los turnos.</p>
-          </div>
-        )}
-
-        {/* Placeholder for future table */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Detalle de Turnos</h2>
-          <p className="text-gray-500">Tabla de turnos del período próximamente...</p>
+      {/* Period Selector */}
+      <section className="mb-6 rounded-[20px] border border-stone-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col sm:flex-row gap-2">
+          {(['day', 'week', 'month'] as const).map((p) => (
+            <button
+              key={p}
+              onClick={() => setPeriod(p)}
+              className={`px-4 py-3 rounded-3xl text-sm font-semibold transition ${
+                period === p
+                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                  : 'bg-stone-100 text-stone-700 border border-stone-200 hover:bg-stone-200'
+              }`}
+            >
+              {periodLabels[p]}
+            </button>
+          ))}
         </div>
-      </div>
-    </div>
+      </section>
+
+      {/* KPIs */}
+      {data && data.closedShiftsCount > 0 ? (
+        <section className="mb-6 grid gap-3">
+          <div className="rounded-[20px] border border-stone-200 bg-white p-4 shadow-sm">
+            <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Ingresos Brutos Totales</p>
+            <p className="mt-2 text-2xl font-semibold text-stone-900">{formatCurrency(data.totalGrossIncome)}</p>
+          </div>
+          <div className="rounded-[20px] border border-stone-200 bg-white p-4 shadow-sm">
+            <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Tarifas Diarias Cobradas</p>
+            <p className="mt-2 text-2xl font-semibold text-stone-900">{formatCurrency(data.totalDailyFee)}</p>
+          </div>
+          <div className="rounded-[20px] border border-stone-200 bg-white p-4 shadow-sm">
+            <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Gastos Aprobados</p>
+            <p className="mt-2 text-2xl font-semibold text-stone-900">{formatCurrency(data.totalApprovedExpenses)}</p>
+          </div>
+          <div className={`rounded-[20px] border p-4 shadow-sm ${data.netIncome >= 0 ? 'border-emerald-200 bg-emerald-50' : 'border-rose-200 bg-rose-50'}`}>
+            <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Utilidad Neta Acumulada</p>
+            <p className={`mt-2 text-2xl font-semibold ${data.netIncome >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{formatCurrency(data.netIncome)}</p>
+          </div>
+          <div className="rounded-[20px] border border-stone-200 bg-white p-4 shadow-sm">
+            <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Turnos Cerrados</p>
+            <p className="mt-2 text-2xl font-semibold text-stone-900">{data.closedShiftsCount}</p>
+          </div>
+          <div className="rounded-[20px] border border-amber-200 bg-amber-50 p-4 shadow-sm">
+            <p className="text-xs uppercase tracking-[0.2em] text-amber-700">Gastos Pendientes</p>
+            <p className="mt-2 text-2xl font-semibold text-amber-900">{data.pendingExpensesCount}</p>
+          </div>
+        </section>
+      ) : (
+        <section className="mb-6 rounded-[20px] border border-stone-200 bg-white p-6 shadow-sm text-center">
+          <div className="text-3xl mb-3">📊</div>
+          <h3 className="text-base font-medium text-stone-900 mb-2">No hay turnos cerrados en este período</h3>
+          <p className="text-sm text-stone-500">Los datos aparecen aquí cuando la propietaria cierra los turnos.</p>
+        </section>
+      )}
+    </main>
   );
 }
