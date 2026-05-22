@@ -1,0 +1,50 @@
+[
+  {
+    "id": "expense-test-1",
+    "shift_id": "shift-test-1",
+    "category": "Combustible",
+    "amount": 25000,
+    "description": "Gasolina para el turno",
+    "status": "APROBADO",
+    "rejection_reason": null,
+    "approved_by": "seed-admin-1",
+    "approved_at": "2026-05-14T18:30:00.000Z",
+    "created_at": "2026-05-14T12:00:00.000Z"
+  },
+  {
+    "id": "expense-test-2",
+    "shift_id": "shift-test-1",
+    "category": "Peaje",
+    "amount": 15000,
+    "description": "Peaje autopista",
+    "status": "APROBADO",
+    "rejection_reason": null,
+    "approved_by": "seed-admin-1",
+    "approved_at": "2026-05-14T18:30:00.000Z",
+    "created_at": "2026-05-14T14:00:00.000Z"
+  },
+  {
+    "id": "expense-test-3",
+    "shift_id": "shift-test-1",
+    "category": "Lavado",
+    "amount": 80000,
+    "description": "Lavado completo del vehículo",
+    "status": "PENDIENTE",
+    "rejection_reason": null,
+    "approved_by": null,
+    "approved_at": null,
+    "created_at": "2026-05-14T16:00:00.000Z"
+  },
+  {
+    "id": "expense-test-4",
+    "shift_id": "shift-test-2",
+    "category": "Combustible",
+    "amount": 20000,
+    "description": "Gasolina",
+    "status": "APROBADO",
+    "rejection_reason": null,
+    "approved_by": "seed-admin-1",
+    "approved_at": "2026-05-13T18:30:00.000Z",
+    "created_at": "2026-05-13T10:00:00.000Z"
+  }
+]

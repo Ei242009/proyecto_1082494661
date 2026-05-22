@@ -1,48 +1,15 @@
 {
-  "version": "1.0",
-  "daily_config": {
-    "tarifa": 80000,
-    "limiteGasto": 200000,
-    "updatedAt": "2026-05-08T00:00:00Z",
-    "updatedBy": "admin-001"
-  },
   "users": [
     {
-      "userId": "admin-001",
-      "email": "admin@busetaapp.co",
-      "passwordHash": "$2b$10$rFcVvsFKScAFVnWLwMfKd.6SnxB3L1Yd0dVWVL5UY4mKNyBvEEeLi",
-      "role": "admin",
-      "name": "Admin BusetaApp",
-      "createdAt": "2026-05-08T00:00:00Z",
-      "companyId": null
-    },
-    {
-      "userId": "conductor-001",
-      "email": "juan@conductor.co",
-      "passwordHash": "$2b$10$rFcVvsFKScAFVnWLwMfKd.6SnxB3L1Yd0dVWVL5UY4mKNyBvEEeLi",
-      "role": "conductor",
-      "name": "Juan Pérez Rodríguez",
-      "createdAt": "2026-05-08T00:00:00Z",
-      "companyId": "company-001"
-    },
-    {
-      "userId": "socio-001",
-      "email": "propietaria@busetas.co",
-      "passwordHash": "$2b$10$rFcVvsFKScAFVnWLwMfKd.6SnxB3L1Yd0dVWVL5UY4mKNyBvEEeLi",
-      "role": "socio",
-      "name": "María Gómez Herrera",
-      "createdAt": "2026-05-08T00:00:00Z",
-      "companyId": "company-001"
+      "id": "admin-1",
+      "email": "propietaria@busetaapp.app",
+      "password_hash": "$2a$10$biLk6xJRyHD45/ha3sjyie1GXO6jDB9AFd6xxrRV.2qb65oah8ZqW",
+      "name": "Bianeidis (Propietaria)",
+      "role": "admin"
     }
   ],
-  "companies": [
-    {
-      "companyId": "company-001",
-      "name": "Busetas Medellín SAS",
-      "ownerEmail": "propietaria@busetas.co",
-      "createdAt": "2026-05-08T00:00:00Z"
-    }
-  ],
-  "shifts": [],
-  "snapshots": []
+  "daily_config": {
+    "daily_fee": 80000,
+    "expense_limit": 200000
+  }
 }

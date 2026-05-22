@@ -1,80 +1,86 @@
-/**
- * app/api/auth/login/route.ts
- * POST /api/auth/login
- * Autentica usuario y retorna JWT en cookie HttpOnly
- */
-
-import { NextRequest, NextResponse } from 'next/server';
+import { compare } from 'bcryptjs';
+import { NextResponse } from 'next/server';
 import { LoginRequestSchema } from '@/lib/validators';
-import { findUserByEmail } from '@/lib/seedReader';
-import { comparePassword, generateJWT, createAuthCookie } from '@/lib/authService';
-import type { LoginResponse, ApiError } from '@/lib/types';
+import { createUserJwt } from '@/lib/auth';
+import { findSeedUserByEmail, getUsers } from '@/lib/dataService';
+import type { SeedUser, User } from '@/lib/types';
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+export async function POST(request: Request) {
   try {
-    // Parsear body
-    const body = await request.json();
+    const payload = await request.json();
+    const parsed = LoginRequestSchema.safeParse(payload);
 
-    // Validar con Zod
-    const result = LoginRequestSchema.safeParse(body);
-    if (!result.success) {
-      const error: ApiError = {
-        error: 'Validación fallida',
-        code: 'VALIDATION_ERROR',
-        details: result.error.issues.map((i) => i.message).join('; '),
-        timestamp: new Date().toISOString(),
-      };
-      return NextResponse.json(error, { status: 400 });
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid request data', details: parsed.error.issues },
+        { status: 400, headers: { 'Cache-Control': 'no-store' } },
+      );
     }
 
-    const { email, password } = result.data;
+    // Check seed users first
+    let user: SeedUser | User | undefined = await findSeedUserByEmail(parsed.data.email);
+    let mustChangePassword = false;
 
-    // Buscar usuario en seed
-    const user = findUserByEmail(email);
     if (!user) {
-      const error: ApiError = {
-        error: 'Usuario no encontrado',
-        code: 'USER_NOT_FOUND',
-        details: `El email '${email}' no existe en el sistema`,
-        timestamp: new Date().toISOString(),
-      };
-      return NextResponse.json(error, { status: 401 });
+      // Check created users
+      const users = await getUsers();
+      const createdUser = users.find(u => u.email === parsed.data.email && u.is_active);
+      if (createdUser) {
+        mustChangePassword = createdUser.must_change_password;
+        // For created users, password is stored as hash
+        const isValidPassword = await compare(parsed.data.password, createdUser.password_hash || '');
+        if (!isValidPassword) {
+          return NextResponse.json(
+            { error: 'Credenciales inválidas' },
+            { status: 401, headers: { 'Cache-Control': 'no-store' } },
+          );
+        }
+        user = createdUser;
+      }
+    } else {
+      // Seed user
+      const isValidPassword = await compare(parsed.data.password, user.password_hash);
+      if (!isValidPassword) {
+        return NextResponse.json(
+          { error: 'Credenciales inválidas' },
+          { status: 401, headers: { 'Cache-Control': 'no-store' } },
+        );
+      }
     }
 
-    // Comparar contraseña
-    const passwordMatch = await comparePassword(password, user.passwordHash);
-    if (!passwordMatch) {
-      const error: ApiError = {
-        error: 'Contraseña incorrecta',
-        code: 'INVALID_PASSWORD',
-        timestamp: new Date().toISOString(),
-      };
-      return NextResponse.json(error, { status: 401 });
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Credenciales inválidas' },
+        { status: 401, headers: { 'Cache-Control': 'no-store' } },
+      );
     }
 
-    // Generar JWT
-    const token = generateJWT(user.userId, user.role, user.email);
-
-    // Crear respuesta con cookie HttpOnly
-    const response: LoginResponse = {
-      success: true,
-      userId: user.userId,
+    const token = await createUserJwt({
+      userId: user.id,
       role: user.role,
       email: user.email,
-      name: user.name,
-    };
+      mustChangePassword,
+    });
 
-    const nextResponse = NextResponse.json(response, { status: 200 });
-    nextResponse.headers.set('Set-Cookie', createAuthCookie(token));
+    const response = NextResponse.json(
+      { success: true, role: user.role, mustChangePassword },
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
 
-    return nextResponse;
+    response.cookies.set('buseta_session', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 24 * 60 * 60,
+    });
+
+    return response;
   } catch (error) {
-    console.error('[api/auth/login] Error:', error);
-    const apiError: ApiError = {
-      error: 'Error interno del servidor',
-      code: 'INTERNAL_ERROR',
-      timestamp: new Date().toISOString(),
-    };
-    return NextResponse.json(apiError, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Unexpected login error';
+    return NextResponse.json(
+      { error: message },
+      { status: 500, headers: { 'Cache-Control': 'no-store' } },
+    );
   }
 }

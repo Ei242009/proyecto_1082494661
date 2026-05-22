@@ -32,92 +32,118 @@ export interface LoginRequest {
   password: string;
 }
 
-export interface LoginResponse {
-  success: boolean;
-  userId: string;
-  role: UserRole;
-  email: string;
-  name: string;
-}
-
-// ============================================================================
-// CONFIGURACIÓN
-// ============================================================================
-
 export interface DailyConfig {
-  tarifa: number; // En COP
-  limiteGasto: number; // En COP
-  updatedAt: string; // ISO8601
-  updatedBy: string; // userId
+  daily_fee: number;
+  expense_limit: number;
 }
 
-export interface SystemMode {
-  mode: 'seed' | 'production';
-}
-
-// ============================================================================
-// TURNOS Y GASTOS
-// ============================================================================
-
-export type ExpenseCategory = 'gasolina' | 'comida' | 'mantenimiento' | 'otro';
-
-export interface Expense {
+export interface SeedUser {
   id: string;
-  categoria: ExpenseCategory;
-  monto: number; // En COP
-  descripcion: string;
-  timestamp: string; // ISO8601
-  approved: boolean;
-  approvedBy: string | null; // userId del socio
+  email: string;
+  password_hash: string;
+  name: string;
+  role: 'admin' | 'conductor' | 'socio';
+}
+
+export interface SeedData {
+  users: SeedUser[];
+  daily_config: DailyConfig;
 }
 
 export interface Shift {
+  id: string;
+  conductor_id: string;
+  shift_date: string;
+  gross_income: number;
+  daily_fee_snapshot: number;
+  status: 'ABIERTO' | 'CERRADO';
+  closed_by?: string | null;
+  closed_at?: string | null;
+  created_at: string;
+}
+
+export interface CreateShiftRequest {
+  gross_income: number;
+}
+
+export interface Expense {
+  id: string;
+  shift_id: string;
+  category: string;
+  amount: number;
+  description: string;
+  status: 'APROBADO' | 'PENDIENTE' | 'RECHAZADO';
+  rejection_reason: string | null;
+  approved_by: string | null;
+  approved_at: string | null;
+  created_at: string;
+}
+
+export interface ExpenseWithShift extends Expense {
+  shift_date: string;
+  conductor_name: string;
+}
+
+export interface AddExpenseRequest {
+  category: string;
+  amount: number;
+  description: string;
+}
+
+export interface UpdateDailyConfigRequest {
+  daily_fee: number;
+  expense_limit: number;
+}
+
+export interface LiquidationExpenseItem {
+  category: string;
+  amount: number;
+  description: string;
+  time: string;
+}
+
+export interface LiquidationResult {
+  gross_income: number;
+  daily_fee_snapshot: number;
+  base_post_fee: number;
+  total_approved_expenses: number;
+  net_income: number;
+  approved_expenses: Array<{
+    id: string;
+    category: string;
+    amount: number;
+    description: string;
+    created_at: string;
+  }>;
+}
+
+export interface ReceiptData {
   shiftId: string;
+  conductor_name: string;
+  closed_by_name: string;
+  closed_at: string;
+  gross_income: number;
+  daily_fee_snapshot: number;
+  base_post_fee: number;
+  approved_expenses: LiquidationExpenseItem[];
+  net_income: number;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface JwtUser {
   userId: string;
-  date: string; // YYYY-MM-DD
-  startTime: string; // HH:mm:ss
-  endTime: string | null; // HH:mm:ss
-  odometerStart: number;
-  odometerEnd: number | null;
-  gastos: Expense[];
-  status: 'open' | 'closed';
-  snapshot: ShiftSnapshot | null;
-  createdAt: string; // ISO8601
-  closedAt: string | null; // ISO8601
+  role: 'admin' | 'conductor' | 'socio';
+  email: string;
+  name?: string;
+  mustChangePassword?: boolean;
 }
 
-export interface ShiftSnapshot {
-  shiftId: string;
-  userId: string;
-  userEmail: string;
-  userName: string;
-  date: string; // YYYY-MM-DD
-  ingresos: number; // En COP
-  gastos: number; // En COP
-  neto: number; // En COP
-  distanciaKm: number;
-  odometerStart: number;
-  odometerEnd: number;
-  calculatedAt: string; // ISO8601
-  calculatedBy: string; // 'servidor'
-}
-
-// ============================================================================
-// EMPRESA (Company)
-// ============================================================================
-
-export interface Company {
-  companyId: string;
-  name: string;
-  ownerEmail: string;
-  createdAt: string; // ISO8601
-}
-
-// ============================================================================
-// SEED (Datos Iniciales)
-// ============================================================================
-
-export interface SeedData {
+export interface AppConfig {
+  appName: string;
   version: string;
   daily_config: DailyConfig;
   users: User[];
@@ -161,4 +187,47 @@ export interface PendingExpenseAlert {
   monto: number;
   descripcion: string;
   shiftId: string;
+}
+
+export interface DashboardData {
+  totalGrossIncome: number;
+  totalDailyFee: number;
+  totalApprovedExpenses: number;
+  netIncome: number;
+  closedShiftsCount: number;
+  pendingExpensesCount: number;
+}
+
+export interface AuditShiftRow {
+  date: string;
+  conductor_name: string;
+  gross_income: number;
+  daily_fee_snapshot: number;
+  status: 'ABIERTO' | 'CERRADO';
+}
+
+export interface AuditFilters {
+  from?: string;
+  to?: string;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: 'admin' | 'conductor' | 'socio';
+  is_active: boolean;
+  must_change_password: boolean;
+  password_hash?: string;
+  created_at: string;
+}
+
+export interface CreateUserRequest {
+  email: string;
+  name: string;
+  role: 'admin' | 'conductor' | 'socio';
+}
+
+export interface CreateUserResponse extends CreateUserRequest {
+  temp_password: string;
 }

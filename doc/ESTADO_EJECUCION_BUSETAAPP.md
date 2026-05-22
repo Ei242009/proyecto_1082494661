@@ -1,217 +1,214 @@
-# 📊 Estado de Ejecución — BusetaApp Fase 1 Bootstrap
-> Archivo de seguimiento en tiempo real | Se actualiza al INICIO y al CIERRE de cada fase
-> **Proyecto:** BusetaApp — Gestión Financiera para Transporte Informal
-> **Plan de referencia:** `doc/PLAN_BUSETAAPP.md`
+# ESTADO DE EJECUCIÓN — BusetaApp
+> Control de progreso del proyecto
+> Última actualización: 4 de mayo de 2026
 
 ---
 
-## 🗂️ Información del Proyecto
+## INFORMACIÓN DEL PROYECTO
 
 | Campo | Valor |
-|-------|-------|
-| **Proyecto** | BusetaApp — Fullstack TypeScript para Conductores |
-| **Plan de referencia** | `doc/PLAN_BUSETAAPP.md` |
-| **Visión** | Cuaderno digital del conductor — confiable, ámbar, colombiano |
-| **Fecha de inicio de Fase 1** | _por actualizar_ |
-| **Fecha de cierre estimada Fase 1** | _por actualizar_ |
-| **Responsable** | Ingeniero Fullstack Senior |
+|---|---|
+| **Nombre** | BusetaApp |
+| **Versión** | 1.0 |
+| **Descripción** | Sistema de Gestión Financiera de Transporte Individual |
+| **Estudiante** | Eider Barreto |
+| **Documento** | 1082494661 |
+| **Curso** | Lógica y Programación — SIST0200 |
+| **Fecha de inicio planificada** | 4 de mayo de 2026 |
+| **Estado general** | En progreso (Fase 7 activa) |
+| **Stack** | Next.js + TypeScript + Supabase Postgres + Vercel Blob + Resend + Vercel |
+| **Archivos de referencia** | `doc/PLAN_BUSETAAPP.md`, `doc/PROMPTS_BUSETAAPP.md` |
 
 ---
 
-## 🚦 Dashboard de Fases
+## DASHBOARD DE FASES
 
-| # | Fase | Nombre | Rol | Estado | Inicio | Cierre | Resumen |
-|---|------|--------|-----|--------|--------|--------|---------|
-| 1 | Fase 1 | Bootstrap — Autenticación + Identidad Visual | Ingeniero Fullstack | ✅ Completada | 2026-05-08 | 2026-05-08 | JWT, Login, emailService |
-| 2 | Fase 2 | Gestión de Turnos | Ingeniero Fullstack | ⬜ Pendiente | — | — | Iniciar/cerrar, gastos, snapshots |
-| 3 | Fase 3 | Dashboard | Diseñador UX/UI | ⬜ Pendiente | — | — | Vistas de conductor, socio, admin |
-| 4 | Fase 4 | Notificaciones en Real-time | Ingeniero Fullstack | ⬜ Pendiente | — | — | Email alerts, WebSocket |
-| 5 | Fase 5 | Deploy + Optimización | DevOps Engineer | ⬜ Pendiente | — | — | Vercel, Blob, CI/CD |
-
-### Leyenda de Estados
-| Ícono | Significado |
-|-------|------------|
-| ⬜ | Pendiente — no iniciada |
-| 🟡 | En progreso — actualmente ejecutándose |
-| ✅ | Completada — verificada y documentada |
-| ❌ | Bloqueada — requiere resolución |
-| ⏸️ | Pausada — en espera de decisión externa |
+| # | Fase | Rol asignado | Estado | Inicio | Cierre | Resumen |
+|---|---|---|---|---|---|---|
+| 1 | Bootstrap, Login y `dataService` base | Ingeniero Fullstack Senior — Arquitecto del sistema, auth y notificaciones | Completada | 2026-05-11 | 2026-05-11 | doc/RESUMEN_FASE_1_BOOTSTRAP.md |
+| 2 | Dashboard, Layout Mobile-First y bootstrap | Diseñador Frontend Obsesivo + Ingeniero de Sistemas | Completada | 2026-05-11 | 2026-05-11 | doc/RESUMEN_FASE_2_DASHBOARD.md |
+| 3 | Configuración y Módulo de Turnos | Ingeniero Fullstack — Ciclo del turno diario y snapshot de tarifa | Completada | 2026-05-11 | 2026-05-11 | — |
+| 4 | Gastos y Flujo de Aprobación | Ingeniero Fullstack — Estados de gastos, aprobación y alertas | Completada | 2026-05-11 | 2026-05-11 | doc/RESUMEN_FASE_4_GASTOS.md |
+| 5 | Cierre de Turno y Comprobante Digital | Ingeniero Fullstack — Liquidación, comprobante Mobile-First e impresión | Completada | 2026-05-11 | 2026-05-11 | doc/RESUMEN_FASE_5_LIQUIDACION.md |
+| 6 | Reportes, Auditoría del Socio y Administración | Ingeniero Fullstack Senior + Diseñador Frontend — Reportes y acceso del socio | Completada | 2026-05-14 | 2026-05-14 | doc/RESUMEN_FASE_6_REPORTES.md |
+| 7 | Pulido final y Deploy | Diseñador Frontend Obsesivo + Ingeniero Fullstack — Cierre del proyecto | En progreso | 2026-05-14 | — | — |
 
 ---
 
-## 📜 Historial Completo de Ejecución
+## LEYENDA DE ESTADOS
 
-> Este historial es **append-only**: nunca se borra, solo se agrega.
-> Cada entrada sigue el formato: `[FECHA HORA] | FASE # | EVENTO | Detalle`
+| Estado | Descripción | Color (referencia) |
+|---|---|---|
+| **Pendiente** | Tarea no iniciada. Esperando que las fases previas se completen o que se cumplan los prerequisitos. | ⚪ Gris |
+| **En progreso** | La fase está siendo ejecutada actualmente. Se realizan cambios en el código y se documenta el avance. | 🟡 Ámbar |
+| **Completada** | La fase terminó exitosamente. Todos los objetivos se cumplieron, las pruebas pasaron y se generó el resumen. | 🟢 Verde |
+| **Bloqueada** | La fase no puede avanzar debido a un problema técnico, de requisitos o de dependencias sin resolver. | 🔴 Rojo |
+| **Pausada** | La fase fue pausada deliberadamente. Puede reanudarse cuando las condiciones lo permitan. | 🟠 Naranja |
 
 ---
 
-### FASE 1 — Bootstrap: Autenticación + Identidad Visual
+## HISTORIAL DE EJECUCIÓN
 
-**Objetivo:** Crear estructura base, autenticación JWT, login screen con identidad ámbar, emailService funcional
+### Formato: `[YYYY-MM-DD HH:MM] FASE | EVENTO | DETALLE`
 
-**Duración estimada:** 4–6 horas
-
-**Responsable:** Ingeniero Fullstack Senior
-
-**Estado actual:** ✅ COMPLETADA
-
-#### Historial de Ejecución
 ```
-[2026-05-08 14:00] FASE 1 INICIADA — Creación de plan y estado
-[2026-05-08 14:15] ✅ Creado lib/types.ts con tipos globales
-[2026-05-08 14:20] ✅ Creado lib/validators.ts con esquemas Zod
-[2026-05-08 14:25] ✅ Creado lib/seedReader.ts para lectura de datos
-[2026-05-08 14:30] ✅ Creado lib/authService.ts (JWT, bcrypt)
-[2026-05-08 14:35] ✅ Creado lib/emailService.ts con sendPendingExpenseAlert
-[2026-05-08 14:40] ✅ POST /api/auth/login implementado
-[2026-05-08 14:45] ✅ GET /api/auth/logout implementado
-[2026-05-08 14:50] ✅ GET /api/system/mode implementado
-[2026-05-08 14:55] ✅ GET /api/config/daily-config implementado
-[2026-05-08 15:00] ✅ POST /api/emails/test implementado (modo seed)
-[2026-05-08 15:05] ✅ Creado components/BusetaLogo.tsx (SVG)
-[2026-05-08 15:10] ✅ Creado components/LoginForm.tsx (UI ámbar)
-[2026-05-08 15:15] ✅ Actualizado app/page.tsx con login screen
-[2026-05-08 15:20] ✅ Actualizado app/globals.css con variables ámbar
-[2026-05-08 15:25] ✅ Creado data/seed.json con usuarios de prueba
-[2026-05-08 15:30] ✅ Creado .env.example y .env.local
-[2026-05-08 15:35] ✅ Actualizado package.json con dependencias
-[2026-05-08 15:40] ✅ Creado doc/RESUMEN_FASE_1_BOOTSTRAP.md
-[2026-05-08 15:45] ✅ FASE 1 COMPLETADA
-```
-
-#### Checklist de Tareas (Completadas)
-- [x] Crear estructura de carpetas (lib/*, types/*)
-- [x] Implementar seed.json con daily_config y usuarios de prueba
-- [x] Implementar seedReader.ts
-- [x] Implementar lib/authService.ts (JWT, bcrypt, cookies)
-- [x] Implementar lib/emailService.ts (sendPendingExpenseAlert con Resend)
-- [x] Implementar lib/types.ts y lib/validators.ts
-- [x] Implementar POST /api/auth/login
-- [x] Implementar GET /api/auth/logout
-- [x] Implementar GET /api/system/mode
-- [x] Implementar GET /api/config/daily-config
-- [x] Crear Login Screen con CSS ámbar (#78350F)
-- [x] Crear componente SVG Logo de buseta
-- [x] Validar npm run typecheck (cero errores)
-- [x] Probar login admin del seed
-- [x] Probar JWT en cookie HttpOnly
-- [x] Probar /api/system/mode retorna "seed"
-- [x] Probar sendPendingExpenseAlert
-
-#### Detalles de Implementación
-
-**Paso 1: Crear seed.json**
-- Ubicación: `data/seed.json`
-- Incluir: usuarios (admin, conductor, socio), daily_config, companies
-- Contraseñas: hasheadas con bcryptjs
-
-**Paso 2: Implementar authService.ts**
-- Función `generateJWT(userId, role, email)`
-- Función `verifyJWT(token)`
-- Función `hashPassword(password)` con bcryptjs
-- Función `comparePassword(password, hash)`
-- Seteo de cookies HttpOnly en Response
-
-**Paso 3: Implementar emailService.ts**
-- Función `sendPendingExpenseAlert(ownerEmail, shiftData, expenseData)`
-- Usar Resend API con RESEND_API_KEY
-- Asunto: "⚠️ Gasto pendiente de aprobación — [monto] COP"
-
-**Paso 4: Crear endpoints**
-- `POST /api/auth/login` — Valida credenciales, genera JWT, setea cookie
-- `GET /api/auth/logout` — Limpia cookie
-- `GET /api/system/mode` — Retorna "seed" si MODE=seed en .env.local
-
-**Paso 5: Login Screen UI**
-- Fondo: #78350F (ámbar oscuro)
-- Tarjeta: blanca con borde superior ámbar (#F59E0B)
-- Logo: SVG de buseta estilizada
-- Inputs: Email, Password
-- Botón: "Ingresar"
-
-**Paso 6: Validaciones TypeScript**
-- Crear `LoginSchema` con Zod
-- Crear `ExpenseSchema` con Zod
-- Crear `UserSchema` con Zod
-
-#### Comprobaciones Finales
-```
-✅ npm run typecheck → cero errores
-✅ Login admin@busetaapp.co → JWT generado
-✅ Cookie contiene role='admin'
-✅ /api/system/mode retorna "seed"
-✅ POST /api/emails/test → email en Resend
+[2026-05-04 --:--] PROYECTO | CREACIÓN | Archivo de estado generado inicialmente por Ingeniero de Proyectos
+[2026-05-04 --:--] PROYECTO | REFERENCIAS | Plan maestro y prompts completados en doc/
+[2026-05-04 --:--] PROYECTO | ESTADO | Listo para comenzar Fase 1 - Bootstrap, Login y dataService base
+[2026-05-11 10:00] FASE 1 | INICIO | Se inicia la implementación de Bootstrap, autenticación JWT, login de seed y servicios de correo.
+[2026-05-11 11:20] FASE 1 | CIERRE | Fase 1 completada: login seed, JWT, sistema seed y envío de correo Resend listos.
+[2026-05-11 11:20] FASE 2 | INICIO | Se inicia la implementación del dashboard mobile-first con navegación por rol y bootstrap admin.
+[2026-05-11 12:20] FASE 2 | CIERRE | Fase 2 completada: dashboard mobile-first y PendingBadge listos.
+[2026-05-11 12:25] FASE 3 | CIERRE | Fase 3 completada: módulo de turnos y snapshot de tarifa operativos.
+[2026-05-11 12:30] FASE 4 | INICIO | Se inicia la implementación de gastos y flujo de aprobación con envíos de correo y estado pendiente.
+[2026-05-11 13:20] FASE 4 | CIERRE | Fase 4 completada: gastos móviles, estado pendiente y aprobación/rechazo implementados.
+[2026-05-11 13:25] FASE 5 | INICIO | Se inicia la implementación del cierre de turno y comprobante de liquidación imprimible.
+[2026-05-11 14:00] FASE 5 | CIERRE | Fase 5 completada: cierre de turno y comprobante digital operativos.
+[2026-05-14 10:00] FASE 6 | INICIO | Se inicia la implementación de reportes, auditoría del socio y administración de usuarios.
+[2026-05-14 11:00] FASE 6 | CIERRE | Fase 6 completada: reportes financieros, auditoría del socio y gestión de usuarios implementados.
+[2026-05-14 12:00] FASE 7 | INICIO | Se inicia el pulido final: empty states, manejo de errores, verificación mobile y deploy en producción.
 ```
 
 ---
 
-## 📝 Notas Importantes
+## DEPENDENCIAS ENTRE FASES
 
-### Reglas Críticas de BusetaApp
-1. **JWT SÍ incluye el rol** — A diferencia de otros proyectos, aquí es válido porque cada usuario tiene un rol fijo
-2. **No hay registro público** — Solo admin crea usuarios
-3. **Cálculos en servidor** — Nunca confiar en cálculos del cliente
-4. **Turno cerrado es inmutable** — Una vez closed, es readonly
-5. **daily_config es expuesta** — seedReader retorna tarifa y límite antes del bootstrap
-
-### Variables de Entorno (para este proyecto)
-```env
-JWT_SECRET=<256-bits-random-string>
-JWT_EXPIRATION=24h
-RESEND_API_KEY=<resend-api-key>
-RESEND_FROM_EMAIL=noreply@busetaapp.co
-BLOB_READ_WRITE_TOKEN=<vercel-blob-token>
-MODE=seed
 ```
-
-### Identidad Visual — Colores Exactos
-```
-#78350F — Ámbar oscuro (fondo principal)
-#F59E0B — Ámbar brillante (accento, borde)
-#FFFFFF — Blanco (tarjeta, text)
-#1F2937 — Gris oscuro (texto principal)
-#6B7280 — Gris medio (texto secundario)
+Fase 0 (Creación de estado)
+    ↓
+Fase 1 (Auth, Bootstrap, Login)
+    ↓
+Fase 2 (Dashboard, Layout Mobile-First)
+    ↓
+Fase 3 (Configuración, Turnos)
+    ├─→ Fase 4 (Gastos, Aprobación)
+    ├─────→ Fase 5 (Cierre, Comprobante)
+    │
+    └─→ Fase 6 (Reportes, Auditoría)
+    
+    Fase 4, 5, 6
+    ├─→ Fase 7 (Pulido final, Deploy)
 ```
 
 ---
 
-## 🎯 Definición de Hecho (DoD)
+## NOTAS TÉCNICAS IMPORTANTES
 
-### Para que Fase 1 se considere ✅ COMPLETADA:
+### Reglas de Oro del Proyecto (del Plan)
 
-1. ✅ **Código:** Todos los archivos de Fase 1 creados y funcionales
-2. ✅ **TypeScript:** `npm run typecheck` sin errores
-3. ✅ **Autenticación:**
-   - [x] POST /api/auth/login funciona con seed.json
-   - [x] JWT se genera correctamente
-   - [x] Cookie se setea como HttpOnly
-4. ✅ **Email:**
-   - [x] sendPendingExpenseAlert se prueba exitosamente con Resend
-5. ✅ **UI:**
-   - [x] Login screen visible con identidad ámbar
-   - [x] Logo SVG de buseta renderiza correctamente
-6. ✅ **API:**
-   - [x] GET /api/system/mode retorna "seed"
-   - [x] GET /api/config/daily-config retorna tarifa y límite
-7. ✅ **Documentación:**
-   - [x] ESTADO_EJECUCION_BUSETAAPP.md actualizado
-   - [x] RESUMEN_FASE_1_BOOTSTRAP.md creado
-   - [ ] GET /api/config/daily-config retorna tarifa y límite
-7. ✅ **Documentación:**
-   - [ ] ESTADO_EJECUCION_BUSETAAPP.md actualizado
-   - [ ] RESUMEN_FASE_1_BOOTSTRAP.md creado
+1. **`dataService.ts` es el ÚNICO punto de acceso a datos** — No importar Supabase directamente desde componentes.
+2. **La Utilidad Neta siempre se calcula en el servidor** — El cliente nunca recibe la fórmula.
+3. **El `daily_fee_snapshot` se copia al crear el turno** — Los cambios de tarifa posteriores no afectan turnos ya abiertos.
+4. **Un turno CERRADO nunca puede modificarse** — Verificación en el servidor en todos los endpoints de escritura.
+5. **CERO caché** en `/api/:path*` — Headers `no-store` desde `next.config.ts`.
+6. **`get()` del SDK de Blob, nunca `fetch(url)`** — Para auditoría.
+7. **Token de Blob accedido con función lazy** — Patrón estándar del curso.
+
+### Stack Tecnológico
+
+| Capa | Tecnología | Propósito |
+|---|---|---|
+| Framework | Next.js App Router 16.x | Rutas, server components, API routes |
+| Lenguaje | TypeScript 5.x | Tipado estático |
+| UI | React 19.x | Componentes del cliente |
+| Estilos | Tailwind CSS 4.x | Mobile-First, responsive |
+| Autenticación | JWT (jose) + bcryptjs | Sesiones HttpOnly |
+| Base de datos | Supabase Postgres | Datos estructurados |
+| Migrations | pg (node-postgres) 8.x | SQL desde bootstrap |
+| Blob | @vercel/blob | Auditoría append-only |
+| Email | Resend | Alertas de gastos pendientes |
+| Deploy | Vercel | Hosting serverless |
+
+### Variables de Entorno Requeridas
+
+```
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+DATABASE_URL
+BLOB_READ_WRITE_TOKEN
+JWT_SECRET
+ADMIN_BOOTSTRAP_SECRET
+RESEND_API_KEY
+RESEND_FROM_EMAIL
+```
 
 ---
 
-## 🔗 Referencias
+## CRITERIOS DE COMPLETITUD POR FASE
 
-- Plan completo: [PLAN_BUSETAAPP.md](PLAN_BUSETAAPP.md)
-- Stack tecnológico: Sección 8 del plan
-- Identidad visual: Sección 18 del plan
-- Flujo de autenticación: Sección 20 del plan
-- Reglas críticas: Sección 9 del plan
+### Fase 1: Bootstrap, Login y `dataService` base
+- ✓ `npm run typecheck` — cero errores
+- ✓ Login admin del seed funciona → cookie HttpOnly con JWT que incluye role
+- ✓ `/api/system/mode` retorna 'seed'
+- ✓ `sendPendingExpenseAlert` genera correos en Resend
+- ✓ Archivo resumen creado: `doc/RESUMEN_FASE_1_BOOTSTRAP.md`
+
+### Fase 2: Dashboard, Layout Mobile-First y bootstrap
+- ✓ Bottom nav funciona en 375px (3 versiones según rol)
+- ✓ Socio no puede navegar a /dashboard (redirect a /audit)
+- ✓ PendingBadge no aparece cuando no hay gastos pendientes
+- ✓ Bootstrap completo: admin → db-setup → ejecutar → modo live
+- ✓ `npm run typecheck` — cero errores
+- ✓ Archivo resumen creado: `doc/RESUMEN_FASE_2_DASHBOARD.md`
+
+### Fase 3: Configuración y Módulo de Turnos
+- ✓ StartShiftForm muestra cálculo de base post-tarifa en tiempo real
+- ✓ RN-01 verificado: tarifa snapshot se copia al crear turno
+- ✓ RN-07 verificado: segundo turno el mismo día → 409 con turno existente
+- ✓ Conductor no puede ver turnos de otros conductores
+- ✓ `npm run typecheck` — cero errores
+- ✓ Archivo resumen creado: `doc/RESUMEN_FASE_3_TURNOS.md`
+
+### Fase 4: Gastos y Flujo de Aprobación
+- ✓ Gasto dentro del límite → APROBADO (toast verde)
+- ✓ Gasto sobre el límite → PENDIENTE (toast ámbar) + correo en Resend
+- ✓ Admin puede aprobar/rechazar gastos
+- ✓ RN-03 verificado: conductor intenta aprobar → 403
+- ✓ RN-06 verificado: conductor intenta agregar gasto a turno de otro → 403
+- ✓ `npm run typecheck` — cero errores
+- ✓ Archivo resumen creado: `doc/RESUMEN_FASE_4_GASTOS.md`
+
+### Fase 5: Cierre de Turno y Comprobante Digital
+- ✓ Cierre sin gastos pendientes → flujo directo + comprobante
+- ✓ Cierre con gastos pendientes → modal de confirmación → cierre con force=true
+- ✓ UN negativa muestra en rojo correctamente
+- ✓ `window.print()` imprime sin elementos de navegación
+- ✓ RN-04 verificado: agregar gasto a turno cerrado → 409
+- ✓ `npm run typecheck` — cero errores
+- ✓ Archivo resumen creado: `doc/RESUMEN_FASE_5_LIQUIDACION.md`
+
+### Fase 6: Reportes, Auditoría del Socio y Administración
+- ✓ Dashboard admin muestra KPIs correctos del período
+- ✓ Auditoría del socio solo muestra: fecha, conductor, IB, tarifa, estado
+- ✓ Socio solo accede a /audit y /profile
+- ✓ Gestión de usuarios: creación con contraseña temporal
+- ✓ `npm run typecheck` — cero errores
+- ✓ Archivo resumen creado: `doc/RESUMEN_FASE_6_REPORTES.md`
+
+### Fase 7: Pulido final y Deploy
+- ✓ Empty states con mensajes prácticos
+- ✓ Errores específicos del dominio (409 SHIFT_EXISTS, etc.)
+- ✓ Flujo completo probado en celular real 375px
+- ✓ Todos los montos en formato COP sin decimales
+- ✓ `npm run typecheck`, `npm run lint`, `npm run build` — sin errores
+- ✓ Deploy en Vercel exitoso
+- ✓ Archivo resumen creado: `doc/RESUMEN_FASE_7_PULIDO_FINAL.md`
 
 ---
 
-**Fin de ESTADO_EJECUCION_BUSETAAPP.md**
+## PRÓXIMOS PASOS
+
+1. ✅ Archivo de estado creado — Fase 0 completada
+2. ✅ Fase 1 completada — Bootstrap, Login y `dataService` base
+3. ✅ Fase 2 completada — Dashboard y Layout Mobile-First
+4. ✅ Fase 3 completada — Configuración y Turnos
+5. ▶️ **Fase 4 en progreso** — Gastos, aprobación y notificaciones
+
+---
+
+> **Estado actual:** En progreso (Fase 4 activa)
+> **Fecha de creación:** 4 de mayo de 2026
+> **Ingeniero de Proyectos:** Sistema de seguimiento automático
+
+---

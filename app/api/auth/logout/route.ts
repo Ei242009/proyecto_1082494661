@@ -1,22 +1,18 @@
-/**
- * app/api/auth/logout/route.ts
- * GET /api/auth/logout
- * Limpia la cookie de autenticación
- */
-
 import { NextResponse } from 'next/server';
-import { createClearAuthCookie } from '@/lib/authService';
-import type { ApiSuccess } from '@/lib/types';
 
-export async function GET(): Promise<NextResponse> {
-  const response: ApiSuccess<{ message: string }> = {
-    success: true,
-    data: { message: 'Sesión cerrada' },
-    timestamp: new Date().toISOString(),
-  };
+export async function POST() {
+  const response = NextResponse.json(
+    { success: true },
+    { headers: { 'Cache-Control': 'no-store' } },
+  );
 
-  const nextResponse = NextResponse.json(response, { status: 200 });
-  nextResponse.headers.set('Set-Cookie', createClearAuthCookie());
+  response.cookies.set('buseta_session', '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0,
+  });
 
-  return nextResponse;
+  return response;
 }
