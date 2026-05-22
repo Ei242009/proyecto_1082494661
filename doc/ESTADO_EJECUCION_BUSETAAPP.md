@@ -1,6 +1,6 @@
 # ESTADO DE EJECUCIÓN — BusetaApp
 > Control de progreso del proyecto
-> Última actualización: 4 de mayo de 2026
+> Última actualización: 22 de mayo de 2026
 
 ---
 
@@ -15,7 +15,7 @@
 | **Documento** | 1082494661 |
 | **Curso** | Lógica y Programación — SIST0200 |
 | **Fecha de inicio planificada** | 4 de mayo de 2026 |
-| **Estado general** | En progreso (Fase 7 activa) |
+| **Estado general** | Completado (Fase 7 completada) |
 | **Stack** | Next.js + TypeScript + Supabase Postgres + Vercel Blob + Resend + Vercel |
 | **Archivos de referencia** | `doc/PLAN_BUSETAAPP.md`, `doc/PROMPTS_BUSETAAPP.md` |
 
@@ -31,7 +31,7 @@
 | 4 | Gastos y Flujo de Aprobación | Ingeniero Fullstack — Estados de gastos, aprobación y alertas | Completada | 2026-05-11 | 2026-05-11 | doc/RESUMEN_FASE_4_GASTOS.md |
 | 5 | Cierre de Turno y Comprobante Digital | Ingeniero Fullstack — Liquidación, comprobante Mobile-First e impresión | Completada | 2026-05-11 | 2026-05-11 | doc/RESUMEN_FASE_5_LIQUIDACION.md |
 | 6 | Reportes, Auditoría del Socio y Administración | Ingeniero Fullstack Senior + Diseñador Frontend — Reportes y acceso del socio | Completada | 2026-05-14 | 2026-05-14 | doc/RESUMEN_FASE_6_REPORTES.md |
-| 7 | Pulido final y Deploy | Diseñador Frontend Obsesivo + Ingeniero Fullstack — Cierre del proyecto | En progreso | 2026-05-14 | — | — |
+| 7 | Pulido final y Deploy | Diseñador Frontend Obsesivo + Ingeniero Fullstack — Cierre del proyecto | Completada | 2026-05-14 | 2026-05-22 | doc/RESUMEN_FASE_7_PULIDO_FINAL.md |
 
 ---
 
@@ -67,6 +67,10 @@
 [2026-05-14 10:00] FASE 6 | INICIO | Se inicia la implementación de reportes, auditoría del socio y administración de usuarios.
 [2026-05-14 11:00] FASE 6 | CIERRE | Fase 6 completada: reportes financieros, auditoría del socio y gestión de usuarios implementados.
 [2026-05-14 12:00] FASE 7 | INICIO | Se inicia el pulido final: empty states, manejo de errores, verificación mobile y deploy en producción.
+[2026-05-22 13:30] FASE 7 | PULIDO_EMPTY_STATES | Mejora de empty states en todas las pantallas con mensajes contextuales positivos y claros.
+[2026-05-22 14:00] FASE 7 | FORMATO_COP | Unificación de formato COP en todos los montos (PendingExpenseCard, CloseShiftPanel). Todos los montos usan formatCurrency.
+[2026-05-22 14:15] FASE 7 | DISEÑO_MOBILE | Actualización de páginas de auditoría y reportes para mejor diseño mobile-first (375px) con componentes stone-* consistentes.
+[2026-05-22 14:30] FASE 7 | CIERRE | Fase 7 completada: pulido final, mejoras mobile, formato COP uniforme. Sistema listo para producción.
 ```
 
 ---
