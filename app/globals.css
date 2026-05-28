@@ -36,7 +36,8 @@
   --shadow-raise:  0 18px 44px -22px rgba(42,20,8,.55);
 }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* NO reset global sin @layer: en Tailwind v4 anularía px-*/py-*/mt-*/gap.
+   La preflight de Tailwind ya resetea box-sizing y márgenes en su capa. */
 html, body { height: 100%; }
 
 body {
