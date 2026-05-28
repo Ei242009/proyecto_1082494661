@@ -1,36 +1,53 @@
-import type { AuditShiftRow } from '@/types/client';
+import { cookies } from 'next/headers';
+import { verifyUserJwt } from '@/lib/auth';
+import { getAuditShifts } from '@/lib/dataService';
+import { formatCurrency } from '@/lib/dateUtils';
 
-async function fetchAudit() {
-  const response = await fetch('/api/audit', { cache: 'no-store' });
-  if (!response.ok) return [];
-  const json = await response.json();
-  return json.data as AuditShiftRow[] || [];
-}
+export const dynamic = 'force-dynamic';
 
 export default async function AuditPage() {
-  const auditItems = await fetchAudit();
+  const cookieStore = await cookies();
+  const token = cookieStore.get('buseta_session')?.value;
+  await verifyUserJwt(token ?? '').catch(() => null);
+
+  const auditItems = await getAuditShifts();
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
-      <div className="rounded-[20px] border border-stone-200 bg-white p-5 shadow-sm">
-        <p className="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Auditoría</p>
-        <h1 className="mt-3 text-2xl font-semibold text-stone-900">Turnos cerrados</h1>
-        <div className="mt-6 space-y-4">
-          {auditItems.length === 0 ? (
-            <div className="rounded-3xl border border-stone-200 bg-stone-50 p-4 text-sm text-stone-600">
-              No hay datos de auditoría disponibles.
-            </div>
-          ) : (
-            auditItems.map((item: AuditShiftRow, index: number) => (
-              <div key={index} className="rounded-3xl border border-stone-200 bg-amber-50 p-4">
-                <p className="text-sm text-stone-500">{item.date}</p>
-                <p className="mt-2 text-lg font-semibold text-stone-900">{item.conductor_name}</p>
-                <p className="mt-1 text-sm text-stone-700">Ingreso bruto: {formatCurrency(item.gross_income)}</p>
-              </div>
-            ))
-          )}
-        </div>
+      <div className="mb-5">
+        <p className="eyebrow">Auditoría · solo lectura</p>
+        <h1 className="font-display text-3xl font-extrabold text-ink">Turnos cerrados</h1>
+        <p className="mt-2 text-sm text-ink-soft">Verifica que la tarifa diaria se descontó en cada turno.</p>
       </div>
+
+      {auditItems.length === 0 ? (
+        <div className="ticket p-6 text-center text-sm text-ink-soft">Aún no hay turnos cerrados para auditar.</div>
+      ) : (
+        <div className="space-y-3">
+          {auditItems.map((item, i) => (
+            <article key={i} className="reveal ticket overflow-hidden" style={{ ['--i' as string]: i }}>
+              <div className="flex items-center justify-between px-5 pt-4">
+                <div>
+                  <p className="font-mono text-xs uppercase tracking-wide text-ink-faint">{item.date}</p>
+                  <p className="mt-0.5 font-medium text-ink">{item.conductor_name}</p>
+                </div>
+                <span className={`badge ${item.status === 'CERRADO' ? 'badge-closed' : 'badge-open'}`}>{item.status}</span>
+              </div>
+              <div className="tear mt-4" />
+              <div className="grid grid-cols-2 divide-x divide-line px-2 py-3 text-center">
+                <div>
+                  <p className="eyebrow">Ingreso bruto</p>
+                  <p className="money mt-1 text-base text-ink">{formatCurrency(item.gross_income)}</p>
+                </div>
+                <div>
+                  <p className="eyebrow">Tarifa descontada</p>
+                  <p className="money mt-1 text-base text-ink-soft">−{formatCurrency(item.daily_fee_snapshot)}</p>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
     </main>
   );
 }

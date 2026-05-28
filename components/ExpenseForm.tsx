@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { formatCurrency } from '@/helpers/formatCurrency';
 
 interface Props {
@@ -9,10 +9,23 @@ interface Props {
   onSaved?: () => void;
 }
 
-const categories = ['Combustible', 'Peaje', 'Lavado', 'Otro'];
+const ico = (d: string) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+    {d.split('|').map((p, i) => <path key={i} d={p} />)}
+  </svg>
+);
+
+// Valores en minúscula EXACTOS al CHECK de la BD / Zod.
+const CATEGORIES: { value: string; label: string; icon: ReactNode }[] = [
+  { value: 'combustible', label: 'Combustible', icon: ico('M14 20V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v14|M4 20h10|M14 9h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V8l-3-3') },
+  { value: 'peaje', label: 'Peaje', icon: ico('M4 20h16|M6 20V8l6-4 6 4v12|M10 20v-5h4v5') },
+  { value: 'lavado', label: 'Lavado', icon: ico('M7 11V6a2 2 0 0 1 4 0|M8 11h9a2 2 0 0 1 2 2v1H6v-1a2 2 0 0 1 2-2Z|M7 18v2|M11 18v2|M15 18v2') },
+  { value: 'reparacion', label: 'Reparación', icon: ico('M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 0 5.4-5.4l-2.3 2.3-2-2 2.3-2.3Z') },
+  { value: 'otro', label: 'Otro', icon: ico('M5 4h11l3 3v13H5z|M9 12h6|M9 16h4') },
+];
 
 export default function ExpenseForm({ shiftId, expenseLimit, onSaved }: Props) {
-  const [category, setCategory] = useState('Combustible');
+  const [category, setCategory] = useState('combustible');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,9 +37,6 @@ export default function ExpenseForm({ shiftId, expenseLimit, onSaved }: Props) {
   }, [amount]);
 
   const overLimit = numericAmount > expenseLimit;
-  const warningMessage = overLimit
-    ? `Este monto supera el límite de ${formatCurrency(expenseLimit)} y requerirá aprobación de la propietaria.`
-    : null;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -38,7 +48,6 @@ export default function ExpenseForm({ shiftId, expenseLimit, onSaved }: Props) {
       setLoading(false);
       return;
     }
-
     if (description.trim().length < 3) {
       setToast({ type: 'error', message: 'La descripción debe tener al menos 3 caracteres.' });
       setLoading(false);
@@ -56,122 +65,121 @@ export default function ExpenseForm({ shiftId, expenseLimit, onSaved }: Props) {
 
     if (!response.ok) {
       if (response.status === 401) {
-        setToast({ type: 'error', message: 'Tu sesión expiró. Redirigiendo a login...' });
-        window.setTimeout(() => {
-          window.location.href = '/login';
-        }, 1200);
+        setToast({ type: 'error', message: 'Tu sesión expiró. Redirigiendo…' });
+        window.setTimeout(() => { window.location.href = '/'; }, 1200);
         return;
       }
-
-      if (response.status === 409 && (data.error === 'SHIFT_CLOSED' || data.error === 'Shift closed')) {
+      if (response.status === 409) {
         setToast({ type: 'warning', message: 'Este turno ya fue cerrado. No puedes agregar más gastos.' });
         return;
       }
-
       if (response.status === 403) {
-        setToast({ type: 'error', message: 'No tienes permiso para realizar esta acción.' });
+        setToast({ type: 'error', message: 'No tienes permiso para esta acción.' });
         return;
       }
-
       setToast({ type: 'error', message: data.error || 'No se pudo registrar el gasto.' });
       return;
     }
 
-    if (data.status === 'APROBADO') {
-      setToast({ type: 'success', message: '✓ Gasto registrado.' });
-    } else {
-      setToast({ type: 'warning', message: '⏳ Gasto enviado a revisión. La propietaria debe aprobarlo.' });
-    }
+    setToast(
+      data.status === 'APROBADO'
+        ? { type: 'success', message: '✓ Gasto registrado y aprobado automáticamente.' }
+        : { type: 'warning', message: '⏳ Gasto enviado a revisión de la propietaria.' },
+    );
 
     setAmount('');
     setDescription('');
-    setCategory('Combustible');
+    setCategory('combustible');
     onSaved?.();
-
     window.setTimeout(() => setToast(null), 4500);
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-5 rounded-[20px] border border-stone-200 bg-white p-5 shadow-sm"
-    >
-      <div className="space-y-2">
-        <h2 className="text-lg font-semibold text-stone-900">Registrar gasto</h2>
-        <p className="text-sm text-stone-600">Este formulario está pensado para el celular: monto rápido, categoría y descripción clara.</p>
+    <form onSubmit={handleSubmit} className="reveal ticket overflow-hidden">
+      <div className="ticket-band" />
+      <div className="px-6 pt-6">
+        <p className="eyebrow">Nuevo gasto</p>
+        <h2 className="font-display mt-1 text-2xl font-bold text-ink">Registrar gasto</h2>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="block text-sm font-medium text-stone-700">
-          Categoría
-          <select
-            value={category}
-            onChange={(event) => setCategory(event.target.value)}
-            className="mt-2 w-full rounded-3xl border border-stone-300 bg-stone-50 px-4 py-3 text-base text-stone-900 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-100"
-          >
-            {categories.map((option) => (
-              <option key={option} value={option}>{option}</option>
-            ))}
-          </select>
-        </label>
+      <div className="space-y-5 px-6 py-6">
+        {/* Selector de categoría con íconos */}
+        <div>
+          <p className="label">Categoría</p>
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+            {CATEGORIES.map((c) => {
+              const active = category === c.value;
+              return (
+                <button
+                  key={c.value}
+                  type="button"
+                  onClick={() => setCategory(c.value)}
+                  className={`flex min-h-[72px] flex-col items-center justify-center gap-1.5 rounded-xl border px-1 py-2 transition ${
+                    active
+                      ? 'border-marigold bg-marigold-tint text-marigold-deep shadow-[inset_0_0_0_1px_var(--color-marigold)]'
+                      : 'border-line-strong bg-paper-2 text-ink-soft hover:border-marigold'
+                  }`}
+                >
+                  {c.icon}
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-wide leading-none text-center">{c.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-        <label htmlFor="expense-amount" className="block text-sm font-medium text-stone-700">
-          Monto
-          <input
-            id="expense-amount"
-            inputMode="decimal"
-            type="text"
-            value={amount}
-            onChange={(event) => setAmount(event.target.value)}
-            placeholder="0"
-            className="mt-2 w-full rounded-3xl border border-stone-300 bg-stone-50 px-4 py-4 text-2xl font-semibold text-stone-900 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-100"
+        <div>
+          <label htmlFor="expense-amount" className="label">Monto (COP)</label>
+          <div className="relative">
+            <span className="money pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-2xl text-ink-faint">$</span>
+            <input
+              id="expense-amount"
+              inputMode="decimal"
+              type="text"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0"
+              className="field field-amount pl-9"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="expense-description" className="label">Descripción</label>
+          <textarea
+            id="expense-description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Ej.: Tanqueo en la ruta 4"
+            rows={2}
+            className="field"
           />
-        </label>
-      </div>
-
-      <label htmlFor="expense-description" className="block text-sm font-medium text-stone-700">
-        Descripción
-        <textarea
-          id="expense-description"
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-          placeholder="Ejemplo: Combustible ruta 4"
-          rows={4}
-          className="mt-2 w-full rounded-3xl border border-stone-300 bg-stone-50 px-4 py-3 text-base text-stone-900 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-100"
-        />
-      </label>
-
-      {warningMessage ? (
-        <div className="rounded-3xl border border-amber-300 bg-amber-50 p-4 text-sm font-semibold text-amber-900">
-          {warningMessage}
         </div>
-      ) : null}
 
-      <div className="rounded-3xl bg-slate-50 p-4 text-sm text-stone-600">
-        Límite actual: <span className="font-semibold text-stone-900">{formatCurrency(expenseLimit)}</span>
+        {overLimit ? (
+          <div className="rounded-xl border border-warn/40 bg-warn-tint px-4 py-3 text-sm font-medium text-warn">
+            Supera el límite de {formatCurrency(expenseLimit)} → quedará <b>PENDIENTE</b> de aprobación.
+          </div>
+        ) : (
+          <p className="text-center font-mono text-[11px] uppercase tracking-widest text-ink-faint">
+            Límite automático: {formatCurrency(expenseLimit)}
+          </p>
+        )}
+
+        <button type="submit" disabled={loading || numericAmount <= 0 || description.trim().length < 3} className="btn btn-primary w-full">
+          {loading ? 'Guardando…' : 'Guardar gasto'}
+        </button>
+
+        {toast ? (
+          <div className={`rounded-xl border px-4 py-3 text-sm font-medium ${
+            toast.type === 'success' ? 'border-pos/30 bg-pos-tint text-pos'
+            : toast.type === 'warning' ? 'border-warn/30 bg-warn-tint text-warn'
+            : 'border-neg/30 bg-neg-tint text-neg'
+          }`}>
+            {toast.message}
+          </div>
+        ) : null}
       </div>
-
-      <button
-        type="submit"
-        disabled={loading || numericAmount <= 0 || description.trim().length < 3}
-        className="inline-flex min-h-[48px] w-full items-center justify-center rounded-3xl bg-amber-600 px-4 text-base font-semibold text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-70"
-      >
-        {loading ? 'Registrando gasto...' : 'Guardar gasto'}
-      </button>
-
-      {toast ? (
-        <div
-          className={`rounded-3xl border px-4 py-3 text-sm ${
-            toast.type === 'success'
-              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-              : toast.type === 'warning'
-              ? 'border-amber-200 bg-amber-50 text-amber-700'
-              : 'border-rose-200 bg-rose-50 text-rose-700'
-          }`}
-        >
-          {toast.message}
-        </div>
-      ) : null}
     </form>
   );
 }

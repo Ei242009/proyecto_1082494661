@@ -4,7 +4,7 @@ import { verifyUserJwt } from '@/lib/auth';
 import { closeShift, ShiftClosedError } from '@/lib/dataService';
 
 interface Params {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export async function POST(request: Request, context: Params) {
@@ -27,7 +27,8 @@ export async function POST(request: Request, context: Params) {
   const force = Boolean(payload.force);
 
   try {
-    const result = await closeShift(context.params.id, user.userId, force);
+    const { id } = await context.params;
+    const result = await closeShift(id, user.userId, force);
     return NextResponse.json(result, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     if (error instanceof ShiftClosedError) {

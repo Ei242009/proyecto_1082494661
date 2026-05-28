@@ -6,59 +6,37 @@ import LiquidationReceipt from '@/components/shift/LiquidationReceipt';
 import CloseShiftPanel from '@/components/shift/CloseShiftPanel';
 import { formatCurrency } from '@/lib/dateUtils';
 
+export const dynamic = 'force-dynamic';
+
 interface Params {
-  params: { id: string };
+  params: Promise<{ id: string }>;
+}
+
+function Guard({ title, text }: { title: string; text: string }) {
+  return (
+    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
+      <section className="reveal ticket p-6">
+        <p className="eyebrow">Aviso</p>
+        <h1 className="font-display mt-2 text-xl font-bold text-ink">{title}</h1>
+        <p className="mt-2 text-sm text-ink-soft">{text}</p>
+      </section>
+    </main>
+  );
 }
 
 export default async function ShiftDetailPage({ params }: Params) {
+  const { id } = await params;
   const cookieStore = await cookies();
   const token = cookieStore.get('buseta_session')?.value;
   const user = token ? await verifyUserJwt(token).catch(() => null) : null;
-  const shift = user ? await getShiftById(params.id) : null;
+  const shift = user ? await getShiftById(id) : null;
 
-  if (!user) {
-    return (
-      <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
-        <section className="rounded-[20px] border border-stone-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-semibold text-stone-900">Acceso restringido</p>
-          <p className="mt-3 text-sm text-stone-600">Inicia sesión para ver el comprobante o cerrar el turno.</p>
-        </section>
-      </main>
-    );
-  }
-
-  if (!shift) {
-    return (
-      <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
-        <section className="rounded-[20px] border border-stone-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-semibold text-stone-900">Turno no encontrado</p>
-          <p className="mt-3 text-sm text-stone-600">Verifica que el identificador del turno sea correcto.</p>
-        </section>
-      </main>
-    );
-  }
-
-  if (user.role === 'conductor' && shift.conductor_id !== user.userId) {
-    return (
-      <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
-        <section className="rounded-[20px] border border-stone-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-semibold text-stone-900">No autorizado</p>
-          <p className="mt-3 text-sm text-stone-600">No tienes permiso para ver este turno.</p>
-        </section>
-      </main>
-    );
-  }
-
-  if (user.role === 'socio') {
-    return (
-      <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
-        <section className="rounded-[20px] border border-stone-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-semibold text-stone-900">Acceso restringido</p>
-          <p className="mt-3 text-sm text-stone-600">Los socios no pueden acceder a detalles de cierre de turnos.</p>
-        </section>
-      </main>
-    );
-  }
+  if (!user) return <Guard title="Acceso restringido" text="Inicia sesión para ver el comprobante o cerrar el turno." />;
+  if (!shift) return <Guard title="Turno no encontrado" text="Verifica que el identificador del turno sea correcto." />;
+  if (user.role === 'conductor' && shift.conductor_id !== user.userId)
+    return <Guard title="No autorizado" text="No tienes permiso para ver este turno." />;
+  if (user.role === 'socio')
+    return <Guard title="Acceso restringido" text="Los socios solo consultan la auditoría de turnos cerrados." />;
 
   if (shift.status === 'CERRADO') {
     const receipt = await buildReceipt(shift.id);
@@ -70,45 +48,45 @@ export default async function ShiftDetailPage({ params }: Params) {
   }
 
   const expenses = await getExpensesByShiftId(shift.id);
-  const approvedExpenses = expenses.filter((expense) => expense.status === 'APROBADO');
-  const totalApproved = approvedExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const totalApproved = expenses.filter((e) => e.status === 'APROBADO').reduce((s, e) => s + e.amount, 0);
   const basePostFee = shift.gross_income - shift.daily_fee_snapshot;
+  const partialNet = basePostFee - totalApproved;
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
-      <section className="space-y-6 rounded-[20px] border border-stone-200 bg-white p-5 shadow-sm">
-        <div>
-          <p className="text-sm uppercase tracking-[0.2em] text-amber-700">Turno abierto</p>
-          <h1 className="mt-2 text-2xl font-semibold text-stone-900">Cierre de turno</h1>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-3xl bg-stone-50 p-4">
-            <p className="text-sm text-stone-500">Ingreso Bruto</p>
-            <p className="mt-2 text-2xl font-semibold text-stone-900">{formatCurrency(shift.gross_income)}</p>
+    <main className="mx-auto max-w-3xl space-y-5 px-4 py-6 sm:px-6">
+      <section className="reveal ticket overflow-hidden" style={{ ['--i' as string]: 0 }}>
+        <div className="ticket-band" />
+        <div className="px-6 pt-6">
+          <div className="flex items-center justify-between">
+            <p className="eyebrow">Turno abierto</p>
+            <span className="badge badge-open">{shift.status}</span>
           </div>
-          <div className="rounded-3xl bg-stone-50 p-4">
-            <p className="text-sm text-stone-500">Tarifa snapshot</p>
-            <p className="mt-2 text-2xl font-semibold text-stone-900">{formatCurrency(shift.daily_fee_snapshot)}</p>
-          </div>
+          <p className="eyebrow mt-4">Utilidad neta parcial</p>
+          <p className={`money text-4xl ${partialNet < 0 ? 'money-neg' : 'money-pos'}`}>{formatCurrency(partialNet)}</p>
         </div>
-
-        <div className="rounded-3xl bg-amber-50 p-4">
-          <p className="text-sm text-stone-500">Base Post-Tarifa</p>
-          <p className="mt-2 text-lg font-semibold text-stone-900">{formatCurrency(basePostFee)}</p>
+        <div className="tear mt-5" />
+        <div className="grid grid-cols-2 gap-px bg-line sm:grid-cols-4">
+          {[
+            ['Ingreso', formatCurrency(shift.gross_income)],
+            ['Tarifa', `−${formatCurrency(shift.daily_fee_snapshot)}`],
+            ['Base', formatCurrency(basePostFee)],
+            ['Gastos', `−${formatCurrency(totalApproved)}`],
+          ].map(([k, v]) => (
+            <div key={k} className="bg-[#FFFDF8] px-3 py-3 text-center">
+              <p className="eyebrow">{k}</p>
+              <p className="money mt-1 text-sm text-ink">{v}</p>
+            </div>
+          ))}
         </div>
-
-        <div className="rounded-3xl bg-stone-50 p-4">
-          <p className="text-sm text-stone-500">Gastos aprobados</p>
-          <p className="mt-2 text-lg font-semibold text-stone-900">{formatCurrency(totalApproved)}</p>
-        </div>
-
-        {user.role === 'admin' ? <CloseShiftPanel shiftId={shift.id} /> : (
-          <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-            El turno sigue abierto. La propietaria podrá cerrarlo desde este mismo comprobante.
-          </div>
-        )}
       </section>
+
+      {user.role === 'admin' ? (
+        <CloseShiftPanel shiftId={shift.id} />
+      ) : (
+        <div className="reveal rounded-2xl border border-warn/30 bg-warn-tint px-4 py-3 text-sm text-warn" style={{ ['--i' as string]: 1 }}>
+          El turno sigue abierto. La propietaria lo cerrará y generará el comprobante.
+        </div>
+      )}
     </main>
   );
 }

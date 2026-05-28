@@ -1,78 +1,244 @@
 @import "tailwindcss";
 
+/* ============================================================
+   BusetaApp — Sistema de diseño "Tiquete de Ruta"
+   Papel crema · tinta espresso · marigold · cifras de taxímetro
+   ============================================================ */
+
+@theme {
+  --color-paper:        #F6ECD9;
+  --color-paper-2:      #FCF6EA;
+  --color-ink:          #2A1408;
+  --color-ink-soft:     #6F4E32;
+  --color-ink-faint:    #9A7B5C;
+  --color-marigold:     #E07A0F;
+  --color-marigold-deep:#AF5400;
+  --color-marigold-tint:#FAE0BE;
+  --color-line:         #E2CFA9;
+  --color-line-strong:  #CBB082;
+
+  --color-pos:          #1C7A4C;
+  --color-pos-tint:     #D8EEDF;
+  --color-warn:         #B5740A;
+  --color-warn-tint:    #FBE7C2;
+  --color-neg:          #B3342A;
+  --color-neg-tint:     #F6DBD5;
+  --color-open:         #265EA6;
+  --color-open-tint:    #DBE7F6;
+
+  --font-display: var(--font-bricolage);
+  --font-body:    var(--font-archivo);
+  --font-mono:    var(--font-spacemono);
+}
+
 :root {
-  /* Identidad Visual BusetaApp - Ámbar Colombiano */
-  --amber-dark: #78350F;      /* Ámbar oscuro - fondo principal */
-  --amber-bright: #F59E0B;    /* Ámbar brillante - accento, bordes */
-  --white: #FFFFFF;           /* Blanco - tarjeta, texto */
-  --gray-dark: #1F2937;       /* Gris oscuro - texto principal */
-  --gray-medium: #6B7280;     /* Gris medio - texto secundario */
-
-  /* Sistema de diseño heredado */
-  --bg: #0a0a0f;
-  --surface: #12121a;
-  --primary: #6c63ff;
-  --accent: #a78bfa;
-  --text: #f0f0f5;
-  --muted: #6b7280;
-
-  /* Fuentes */
-  --font-display: var(--font-poppins);
-  --font-secondary: var(--font-nunito);
+  --shadow-ticket: 0 1px 0 rgba(203,176,130,.6), 0 14px 30px -18px rgba(42,20,8,.45);
+  --shadow-raise:  0 18px 44px -22px rgba(42,20,8,.55);
 }
 
-@theme inline {
-  --color-bg: var(--bg);
-  --color-surface: var(--surface);
-  --color-primary: var(--primary);
-  --color-accent: var(--accent);
-  --color-text: var(--text);
-  --color-muted: var(--muted);
-  --font-display: var(--font-display);
-  --font-secondary: var(--font-secondary);
-}
-
-/* Reset básico */
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html, body {
-  height: 100%;
-}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
 
 body {
-  font-family: var(--font-secondary);
-  background-color: var(--bg);
-  color: var(--text);
+  font-family: var(--font-body), system-ui, sans-serif;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Clase para fondo ámbar de BusetaApp */
-.busetaapp-background {
-  background-color: #78350F;
-  background-image: linear-gradient(135deg, #78350F 0%, #5a2508 100%);
+/* Grano de papel + vignette cálida, fijo sobre todo el lienzo */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(224,122,15,.10), transparent 60%),
+    radial-gradient(100% 60% at 100% 110%, rgba(175,84,0,.08), transparent 55%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  background-size: auto, auto, 160px 160px;
+  opacity: .9;
+  mix-blend-mode: multiply;
 }
 
-/* Efecto glow para el título */
-.glow-text {
-  text-shadow:
-    0 0 20px rgba(108, 99, 255, 0.4),
-    0 0 40px rgba(108, 99, 255, 0.2);
+::selection { background: var(--color-marigold); color: #fff; }
+
+/* ---------- Tipografía utilitaria ---------- */
+.font-display { font-family: var(--font-display), sans-serif; }
+.font-mono    { font-family: var(--font-mono), monospace; }
+
+.eyebrow {
+  font-family: var(--font-mono), monospace;
+  text-transform: uppercase;
+  letter-spacing: .22em;
+  font-size: .68rem;
+  color: var(--color-ink-faint);
 }
 
+.display-title {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 0.98;
+  color: var(--color-ink);
+}
+
+/* ---------- Cifras de dinero (taxímetro) ---------- */
+.money {
+  font-family: var(--font-mono), monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  font-weight: 700;
+}
+.money-pos { color: var(--color-pos); }
+.money-neg { color: var(--color-neg); }
+
+/* ---------- Tiquete (tarjeta base) ---------- */
+.ticket {
+  position: relative;
+  background: #FFFDF8;
+  border: 1px solid var(--color-line);
+  border-radius: 18px;
+  box-shadow: var(--shadow-ticket);
+}
+.ticket-band {
+  height: 6px;
+  border-radius: 18px 18px 0 0;
+  background: linear-gradient(90deg, var(--color-marigold), var(--color-marigold-deep));
+}
+.ticket-band-pos    { background: linear-gradient(90deg, #2C9A63, var(--color-pos)); }
+.ticket-band-ink    { background: linear-gradient(90deg, #4A2C16, var(--color-ink)); }
+
+/* Línea de corte perforada con muescas laterales */
+.tear {
+  position: relative;
+  height: 0;
+  border-top: 2px dashed var(--color-line-strong);
+  margin: 0 -1px;
+}
+.tear::before, .tear::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 18px; height: 18px;
+  background: var(--color-paper);
+  border: 1px solid var(--color-line);
+  border-radius: 50%;
+  transform: translateY(-50%);
+}
+.tear::before { left: -10px; }
+.tear::after  { right: -10px; }
+
+/* ---------- Tablero de ruta (header oscuro) ---------- */
+.board {
+  background:
+    radial-gradient(140% 120% at 0% 0%, #3A2113, var(--color-ink));
+  color: var(--color-paper-2);
+  border-bottom: 3px solid var(--color-marigold);
+}
+.board-led {
+  font-family: var(--font-mono), monospace;
+  letter-spacing: .35em;
+  color: var(--color-marigold);
+  text-shadow: 0 0 14px rgba(224,122,15,.55);
+}
+
+/* ---------- Botones ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  min-height: 50px; padding: 0 1.25rem;
+  border-radius: 14px;
+  font-family: var(--font-body), sans-serif;
+  font-weight: 700; font-size: .98rem;
+  cursor: pointer; border: 1px solid transparent;
+  transition: transform .12s ease, box-shadow .15s ease, background-color .15s ease;
+}
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+
+.btn-primary {
+  background: linear-gradient(180deg, var(--color-marigold), var(--color-marigold-deep));
+  color: #fff;
+  box-shadow: 0 10px 22px -12px var(--color-marigold-deep), inset 0 1px 0 rgba(255,255,255,.25);
+}
+.btn-primary:hover:not(:disabled) { box-shadow: 0 14px 26px -12px var(--color-marigold-deep); }
+
+.btn-ghost {
+  background: #FFFDF8; color: var(--color-ink);
+  border-color: var(--color-line-strong);
+}
+.btn-ghost:hover:not(:disabled) { background: var(--color-marigold-tint); }
+
+.btn-pos { background: var(--color-pos); color: #fff; }
+.btn-neg { background: var(--color-neg); color: #fff; }
+
+/* ---------- Campos de formulario ---------- */
+.label {
+  display: block;
+  font-family: var(--font-mono), monospace;
+  font-size: .72rem; text-transform: uppercase; letter-spacing: .12em;
+  color: var(--color-ink-soft); margin-bottom: .5rem;
+}
+.field {
+  width: 100%;
+  background: var(--color-paper-2);
+  border: 1.5px solid var(--color-line-strong);
+  border-radius: 14px;
+  padding: .85rem 1rem;
+  color: var(--color-ink);
+  font-family: var(--font-body), sans-serif;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease, background-color .15s;
+}
+.field::placeholder { color: var(--color-ink-faint); }
+.field:focus {
+  border-color: var(--color-marigold);
+  background: #fff;
+  box-shadow: 0 0 0 4px var(--color-marigold-tint);
+}
+.field-amount {
+  font-family: var(--font-mono), monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.9rem; font-weight: 700; padding: .8rem 1rem;
+}
+
+/* ---------- Badges de estado ---------- */
+.badge {
+  display: inline-flex; align-items: center; gap: .35rem;
+  font-family: var(--font-mono), monospace;
+  font-size: .68rem; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: .3rem .6rem; border-radius: 999px;
+  border: 1px solid transparent;
+}
+.badge-pos    { background: var(--color-pos-tint);  color: var(--color-pos);  border-color: #B6DDC4; }
+.badge-warn   { background: var(--color-warn-tint); color: var(--color-warn); border-color: #E9CF96; }
+.badge-neg    { background: var(--color-neg-tint);  color: var(--color-neg);  border-color: #E6B7AE; }
+.badge-open   { background: var(--color-open-tint); color: var(--color-open); border-color: #B9CDEA; }
+.badge-closed { background: #ECE0C9; color: var(--color-ink-soft); border-color: var(--color-line-strong); }
+
+/* ---------- Reveal en carga (stagger con --i) ---------- */
+@keyframes ticketIn {
+  from { opacity: 0; transform: translateY(14px) scale(.99); }
+  to   { opacity: 1; transform: none; }
+}
+.reveal {
+  opacity: 0;
+  animation: ticketIn .55s cubic-bezier(.2,.7,.2,1) forwards;
+  animation-delay: calc(var(--i, 0) * 80ms);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal { animation: none; opacity: 1; }
+  body::before { display: none; }
+}
+
+/* ---------- Impresión del comprobante ---------- */
 @media print {
-  .no-print {
-    display: none !important;
-  }
-  body {
-    background: white !important;
-    color: black !important;
-  }
-  .print-safe {
-    box-shadow: none !important;
-    border: none !important;
-  }
+  body::before { display: none !important; }
+  .no-print { display: none !important; }
+  body { background: #fff !important; }
+  .ticket { box-shadow: none !important; border-color: #bbb !important; }
 }

@@ -18,45 +18,29 @@ export default function PendingExpensesClient() {
       const data = await response.json();
       if (!response.ok) {
         if (response.status === 401) {
-          setToast({ type: 'error', message: 'Tu sesión expiró. Redirigiendo a login...' });
-          window.setTimeout(() => {
-            window.location.href = '/login';
-          }, 1200);
+          setToast({ type: 'error', message: 'Tu sesión expiró. Redirigiendo…' });
+          window.setTimeout(() => { window.location.href = '/'; }, 1200);
           return;
         }
         throw new Error(data.error || 'No se pudo obtener la lista de gastos pendientes.');
       }
       setExpenses(data.expenses ?? []);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Error inesperado');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error inesperado');
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => {
-    loadExpenses();
-  }, []);
+  useEffect(() => { loadExpenses(); }, []);
 
   async function handleApprove(id: string) {
-    const response = await fetch(`/api/expenses/${id}/approve`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    });
+    const response = await fetch(`/api/expenses/${id}/approve`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
     const data = await response.json();
-
     if (!response.ok) {
-      if (response.status === 401) {
-        setToast({ type: 'error', message: 'Tu sesión expiró. Redirigiendo a login...' });
-        window.setTimeout(() => {
-          window.location.href = '/login';
-        }, 1200);
-        return;
-      }
       setToast({ type: 'error', message: data.error || 'No se pudo aprobar el gasto.' });
       return;
     }
-
     setToast({ type: 'success', message: 'Gasto aprobado correctamente.' });
     await loadExpenses();
   }
@@ -68,19 +52,10 @@ export default function PendingExpensesClient() {
       body: JSON.stringify({ reason }),
     });
     const data = await response.json();
-
     if (!response.ok) {
-      if (response.status === 401) {
-        setToast({ type: 'error', message: 'Tu sesión expiró. Redirigiendo a login...' });
-        window.setTimeout(() => {
-          window.location.href = '/login';
-        }, 1200);
-        return;
-      }
       setToast({ type: 'error', message: data.error || 'No se pudo rechazar el gasto.' });
       return;
     }
-
     setToast({ type: 'warning', message: 'Gasto rechazado. El conductor verá el motivo.' });
     await loadExpenses();
   }
@@ -88,42 +63,32 @@ export default function PendingExpensesClient() {
   return (
     <div className="space-y-4">
       {toast ? (
-        <div
-          className={`rounded-3xl border px-4 py-3 text-sm ${
-            toast.type === 'success'
-              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-              : toast.type === 'warning'
-              ? 'border-amber-200 bg-amber-50 text-amber-700'
-              : 'border-rose-200 bg-rose-50 text-rose-700'
-          }`}
-        >
+        <div className={`rounded-xl border px-4 py-3 text-sm font-medium ${
+          toast.type === 'success' ? 'border-pos/30 bg-pos-tint text-pos'
+          : toast.type === 'warning' ? 'border-warn/30 bg-warn-tint text-warn'
+          : 'border-neg/30 bg-neg-tint text-neg'
+        }`}>
           {toast.message}
         </div>
       ) : null}
 
       {loading ? (
-        <div className="rounded-[20px] border border-stone-200 bg-white p-5 text-sm text-stone-500 shadow-sm">
-          Cargando gastos pendientes...
-        </div>
+        <div className="ticket p-5 text-sm text-ink-faint">Cargando gastos pendientes…</div>
       ) : error ? (
-        <div className="rounded-[20px] border border-rose-200 bg-rose-50 p-5 text-sm text-rose-700 shadow-sm">
-          {error}
-        </div>
+        <div className="rounded-2xl border border-neg/30 bg-neg-tint p-5 text-sm text-neg">{error}</div>
       ) : expenses.length === 0 ? (
-        <div className="rounded-[20px] border border-stone-200 bg-white p-5 text-center shadow-sm">
-          <div className="text-2xl">✓</div>
-          <p className="mt-2 text-sm font-medium text-stone-700">No hay gastos esperando aprobación.</p>
-          <p className="mt-1 text-xs text-stone-500">Todo está al día.</p>
+        <div className="ticket overflow-hidden">
+          <div className="ticket-band ticket-band-pos" />
+          <div className="p-8 text-center">
+            <p className="text-3xl">✓</p>
+            <p className="font-display mt-3 text-xl font-bold text-ink">Todo al día</p>
+            <p className="mt-1 text-sm text-ink-soft">No hay gastos esperando aprobación.</p>
+          </div>
         </div>
       ) : (
         <div className="space-y-4">
-          {expenses.map((expense) => (
-            <PendingExpenseCard
-              key={expense.id}
-              expense={expense}
-              onApprove={handleApprove}
-              onReject={handleReject}
-            />
+          {expenses.map((expense, i) => (
+            <PendingExpenseCard key={expense.id} expense={expense} index={i} onApprove={handleApprove} onReject={handleReject} />
           ))}
         </div>
       )}

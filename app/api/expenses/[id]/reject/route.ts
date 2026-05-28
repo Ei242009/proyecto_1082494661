@@ -5,7 +5,7 @@ import { rejectExpense, ExpenseNotFoundError } from '@/lib/dataService';
 import { RejectExpenseRequestSchema } from '@/lib/validators';
 
 interface Params {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export async function POST(request: Request, context: Params) {
@@ -34,7 +34,8 @@ export async function POST(request: Request, context: Params) {
   }
 
   try {
-    const expense = await rejectExpense(context.params.id, user.userId, parsed.data.reason);
+    const { id } = await context.params;
+    const expense = await rejectExpense(id, user.userId, parsed.data.reason);
     return NextResponse.json(expense, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     if (error instanceof ExpenseNotFoundError) {

@@ -1,7 +1,10 @@
+import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { verifyUserJwt } from '@/lib/auth';
 import { getDailyConfig, getTodayShift } from '@/lib/dataService';
 import ExpensePanel from '@/components/ExpensePanel';
+
+export const dynamic = 'force-dynamic';
 
 export default async function ExpensesPage() {
   const cookieStore = await cookies();
@@ -13,9 +16,10 @@ export default async function ExpensesPage() {
   if (!user || user.role !== 'conductor') {
     return (
       <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
-        <section className="rounded-[20px] border border-stone-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-semibold text-stone-900">Solo los conductores pueden registrar gastos aquí.</p>
-          <p className="mt-3 text-sm text-stone-600">Ingresa con una cuenta de conductor para acceder al formulario.</p>
+        <section className="reveal ticket p-6">
+          <p className="eyebrow">Gastos</p>
+          <h1 className="font-display mt-2 text-xl font-bold text-ink">Solo conductores</h1>
+          <p className="mt-2 text-sm text-ink-soft">Ingresa con una cuenta de conductor para registrar gastos.</p>
         </section>
       </main>
     );
@@ -24,10 +28,14 @@ export default async function ExpensesPage() {
   if (!shift) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
-        <section className="rounded-[20px] border border-stone-200 bg-white p-5 shadow-sm">
-          <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Gastos</p>
-          <h1 className="mt-2 text-2xl font-semibold text-stone-900">No hay turno activo</h1>
-          <p className="mt-4 text-sm text-stone-600">Inicia tu turno primero en la sección Turno para poder registrar gastos del día.</p>
+        <section className="reveal ticket overflow-hidden">
+          <div className="ticket-band" />
+          <div className="p-6 text-center">
+            <p className="font-mono text-4xl text-line-strong">⏱</p>
+            <h1 className="font-display mt-3 text-2xl font-bold text-ink">No hay turno activo</h1>
+            <p className="mt-2 text-sm text-ink-soft">Abre tu turno del día para empezar a registrar gastos.</p>
+            <Link href="/turno" className="btn btn-primary mt-5 w-full">Ir a iniciar turno</Link>
+          </div>
         </section>
       </main>
     );

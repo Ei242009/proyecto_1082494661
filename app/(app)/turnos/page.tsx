@@ -1,13 +1,48 @@
-export default function ShiftsPage() {
+import Link from 'next/link';
+import { getShifts, getUsers } from '@/lib/dataService';
+import { formatCurrency } from '@/lib/dateUtils';
+
+export const dynamic = 'force-dynamic';
+
+export default async function ShiftsPage() {
+  const [shifts, users] = await Promise.all([getShifts(), getUsers()]);
+  const nameById = new Map(users.map((u) => [u.id, u.name]));
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
-      <div className="rounded-[20px] border border-stone-200 bg-white p-5 shadow-sm">
-        <p className="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Turnos</p>
-        <h1 className="mt-3 text-2xl font-semibold text-stone-900">Lista de turnos</h1>
-        <div className="mt-6 rounded-3xl border border-stone-200 bg-stone-50 p-4 text-sm text-stone-600">
-          Aquí aparecerán los turnos abiertos y cerrados para controlar la ruta.
-        </div>
+      <div className="mb-5">
+        <p className="eyebrow">Operación</p>
+        <h1 className="font-display text-3xl font-extrabold text-ink">Turnos</h1>
+        <p className="mt-2 text-sm text-ink-soft">Abiertos y cerrados. Toca un turno para ver el comprobante o cerrarlo.</p>
       </div>
+
+      {shifts.length === 0 ? (
+        <div className="ticket p-6 text-center text-sm text-ink-soft">Todavía no hay turnos registrados.</div>
+      ) : (
+        <div className="space-y-3">
+          {shifts.map((shift, i) => {
+            const net = shift.gross_income - shift.daily_fee_snapshot;
+            return (
+              <Link
+                key={shift.id}
+                href={`/shift/${shift.id}`}
+                className="reveal ticket flex items-center justify-between gap-4 overflow-hidden p-4 transition hover:shadow-[var(--shadow-raise)]"
+                style={{ ['--i' as string]: i }}
+              >
+                <div>
+                  <p className="font-mono text-xs uppercase tracking-wide text-ink-faint">{shift.shift_date}</p>
+                  <p className="mt-0.5 font-medium text-ink">{nameById.get(shift.conductor_id) ?? 'Conductor'}</p>
+                  <span className={`badge mt-1 ${shift.status === 'CERRADO' ? 'badge-closed' : 'badge-open'}`}>{shift.status}</span>
+                </div>
+                <div className="text-right">
+                  <p className="eyebrow">Base post-tarifa</p>
+                  <p className="money text-lg text-ink">{formatCurrency(net)}</p>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </main>
   );
 }

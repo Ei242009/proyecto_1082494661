@@ -2,8 +2,7 @@ import { compare } from 'bcryptjs';
 import { NextResponse } from 'next/server';
 import { LoginRequestSchema } from '@/lib/validators';
 import { createUserJwt } from '@/lib/auth';
-import { findSeedUserByEmail, getUsers } from '@/lib/dataService';
-import type { SeedUser, User } from '@/lib/types';
+import { getUserByEmail, recordAudit } from '@/lib/dataService';
 
 export async function POST(request: Request) {
   try {
@@ -17,38 +16,17 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check seed users first
-    let user: SeedUser | User | undefined = await findSeedUserByEmail(parsed.data.email);
-    let mustChangePassword = false;
+    const user = await getUserByEmail(parsed.data.email);
 
-    if (!user) {
-      // Check created users
-      const users = await getUsers();
-      const createdUser = users.find(u => u.email === parsed.data.email && u.is_active);
-      if (createdUser) {
-        mustChangePassword = createdUser.must_change_password;
-        // For created users, password is stored as hash
-        const isValidPassword = await compare(parsed.data.password, createdUser.password_hash || '');
-        if (!isValidPassword) {
-          return NextResponse.json(
-            { error: 'Credenciales inválidas' },
-            { status: 401, headers: { 'Cache-Control': 'no-store' } },
-          );
-        }
-        user = createdUser;
-      }
-    } else {
-      // Seed user
-      const isValidPassword = await compare(parsed.data.password, user.password_hash);
-      if (!isValidPassword) {
-        return NextResponse.json(
-          { error: 'Credenciales inválidas' },
-          { status: 401, headers: { 'Cache-Control': 'no-store' } },
-        );
-      }
+    if (!user || !user.is_active || !user.password_hash) {
+      return NextResponse.json(
+        { error: 'Credenciales inválidas' },
+        { status: 401, headers: { 'Cache-Control': 'no-store' } },
+      );
     }
 
-    if (!user) {
+    const isValidPassword = await compare(parsed.data.password, user.password_hash);
+    if (!isValidPassword) {
       return NextResponse.json(
         { error: 'Credenciales inválidas' },
         { status: 401, headers: { 'Cache-Control': 'no-store' } },
@@ -59,11 +37,20 @@ export async function POST(request: Request) {
       userId: user.id,
       role: user.role,
       email: user.email,
-      mustChangePassword,
+      mustChangePassword: user.must_change_password,
+    });
+
+    await recordAudit({
+      user_id: user.id,
+      user_email: user.email,
+      user_role: user.role,
+      action: 'login',
+      entity: 'system',
+      summary: `Inicio de sesión: ${user.email} (${user.role})`,
     });
 
     const response = NextResponse.json(
-      { success: true, role: user.role, mustChangePassword },
+      { success: true, role: user.role, mustChangePassword: user.must_change_password },
       { headers: { 'Cache-Control': 'no-store' } },
     );
 

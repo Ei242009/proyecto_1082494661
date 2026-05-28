@@ -8,91 +8,91 @@ interface Props {
 }
 
 export default function LiquidationReceipt({ receipt }: Props) {
+  const negative = receipt.net_income < 0;
+
   return (
-    <div className="mx-auto max-w-3xl rounded-[20px] border border-stone-200 bg-white p-6 shadow-sm">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm uppercase tracking-[0.2em] text-amber-700">BusetaApp</p>
-          <h1 className="mt-2 text-3xl font-semibold text-stone-900">Comprobante de Liquidación</h1>
-        </div>
-        <div className="rounded-3xl bg-stone-50 px-4 py-3 text-sm text-stone-600">
-          Turno: {new Date(receipt.closed_at).toLocaleDateString('es-CO', { dateStyle: 'long' })}
-        </div>
-      </div>
+    <div className="mx-auto max-w-md">
+      <div className="reveal ticket overflow-hidden print-safe">
+        <div className={negative ? 'ticket-band ticket-band-ink' : 'ticket-band ticket-band-pos'} />
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        <div className="rounded-3xl bg-stone-50 p-4">
-          <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Conductor</p>
-          <p className="mt-2 text-lg font-semibold text-stone-900">{receipt.conductor_name}</p>
+        {/* Encabezado tipo tiquete */}
+        <div className="px-7 pt-6 text-center">
+          <p className="board-led text-[11px]" style={{ color: 'var(--color-marigold-deep)' }}>BUSETA · APP</p>
+          <h1 className="font-display mt-1 text-2xl font-extrabold text-ink">Comprobante de Liquidación</h1>
+          <p className="mt-1 font-mono text-xs text-ink-faint">
+            {new Date(receipt.closed_at).toLocaleDateString('es-CO', { dateStyle: 'long' })}
+          </p>
         </div>
-        <div className="rounded-3xl bg-stone-50 p-4">
-          <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Cerrado por</p>
-          <p className="mt-2 text-lg font-semibold text-stone-900">{receipt.closed_by_name}</p>
-          <p className="mt-1 text-sm text-stone-500">{new Date(receipt.closed_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}</p>
-        </div>
-      </div>
 
-      <div className="mt-8 overflow-hidden rounded-[20px] border border-stone-200 text-sm text-stone-700">
-        <div className="bg-stone-50 px-5 py-4 font-semibold text-stone-900">Detalle</div>
-        <div className="space-y-3 px-5 py-4">
-          <div className="flex items-center justify-between">
-            <span>Ingreso Bruto</span>
-            <span className="font-semibold text-stone-900">+{formatCurrency(receipt.gross_income)}</span>
+        <div className="px-7 pt-5">
+          <div className="flex items-center justify-between font-mono text-xs uppercase tracking-wide text-ink-soft">
+            <span>Conductor</span>
+            <span className="text-ink">{receipt.conductor_name}</span>
           </div>
-          <div className="flex items-center justify-between">
-            <span>(–) Tarifa Diaria</span>
-            <span className="font-semibold text-stone-900">–{formatCurrency(receipt.daily_fee_snapshot)}</span>
-          </div>
-          <div className="flex items-center justify-between border-t border-stone-200 pt-3">
-            <span>Base Post-Tarifa</span>
-            <span className="font-semibold text-stone-900">{formatCurrency(receipt.base_post_fee)}</span>
+          <div className="mt-1 flex items-center justify-between font-mono text-xs uppercase tracking-wide text-ink-soft">
+            <span>Cerrado por</span>
+            <span className="text-ink">{receipt.closed_by_name}</span>
           </div>
         </div>
 
-        <div className="border-t border-stone-200 bg-stone-50 px-5 py-4 text-sm uppercase tracking-[0.2em] text-stone-500">
-          Gastos aprobados
+        <div className="tear mt-5" />
+
+        {/* Detalle de la liquidación */}
+        <div className="space-y-2.5 px-7 py-5">
+          <Row label="Ingreso Bruto" value={`+${formatCurrency(receipt.gross_income)}`} />
+          <Row label="(−) Tarifa Diaria" value={`−${formatCurrency(receipt.daily_fee_snapshot)}`} />
+          <div className="flex items-center justify-between border-t border-dashed border-line-strong pt-2.5">
+            <span className="font-mono text-xs uppercase tracking-wide text-ink-soft">Base post-tarifa</span>
+            <span className="money text-sm text-ink">{formatCurrency(receipt.base_post_fee)}</span>
+          </div>
         </div>
 
-        <div className="space-y-3 px-5 py-4">
+        <div className="bg-paper px-7 py-2">
+          <p className="eyebrow">Gastos aprobados</p>
+        </div>
+
+        <div className="space-y-2.5 px-7 py-5">
           {receipt.approved_expenses.length === 0 ? (
-            <div className="rounded-3xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-500">
-              No hay gastos aprobados en este turno.
-            </div>
+            <p className="text-center text-sm text-ink-faint">Sin gastos aprobados.</p>
           ) : (
-            receipt.approved_expenses.map((expense) => (
-              <div key={`${expense.category}-${expense.time}-${expense.amount}`} className="flex items-center justify-between gap-4 rounded-3xl border border-stone-200 bg-white px-4 py-3">
-                <div>
-                  <p className="font-semibold text-stone-900">{expense.category}</p>
-                  <p className="text-xs text-stone-500">{expense.time} · {expense.description}</p>
+            receipt.approved_expenses.map((e) => (
+              <div key={`${e.category}-${e.time}-${e.amount}`} className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-ink">{e.category}</p>
+                  <p className="truncate font-mono text-[11px] text-ink-faint">{e.time} · {e.description}</p>
                 </div>
-                <span className="font-semibold text-stone-900">–{formatCurrency(expense.amount)}</span>
+                <span className="money shrink-0 text-sm text-ink-soft">−{formatCurrency(e.amount)}</span>
               </div>
             ))
           )}
         </div>
 
-        <div className="border-t border-stone-200 bg-stone-50 px-5 py-4">
-          <div className="flex items-center justify-between text-sm font-semibold text-stone-900">
-            <span>UTILIDAD NETA</span>
-            <span className={`text-lg ${receipt.net_income < 0 ? 'text-rose-600' : 'text-emerald-700'}`}>
-              {receipt.net_income < 0 ? '-' : '+'}{formatCurrency(Math.abs(receipt.net_income))}
-            </span>
-          </div>
+        <div className="tear" />
+
+        {/* Total */}
+        <div className={`px-7 py-6 text-center ${negative ? 'bg-neg-tint' : 'bg-pos-tint'}`}>
+          <p className="eyebrow">Utilidad Neta</p>
+          <p className={`money mt-1 text-4xl ${negative ? 'money-neg' : 'money-pos'}`}>
+            {negative ? '−' : ''}{formatCurrency(Math.abs(receipt.net_income))}
+          </p>
+          <p className="mt-2 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+            {new Date(receipt.closed_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })} · COP
+          </p>
         </div>
       </div>
 
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between no-print">
-        <div className="rounded-3xl bg-stone-50 px-4 py-3 text-sm text-stone-600">
-          Este comprobante se puede imprimir sin eliminar datos financieros.
-        </div>
-        <button
-          type="button"
-          onClick={() => window.print()}
-          className="inline-flex min-h-[48px] items-center justify-center rounded-3xl bg-amber-600 px-6 text-base font-semibold text-white transition hover:bg-amber-700"
-        >
-          Imprimir comprobante
-        </button>
-      </div>
+      <button type="button" onClick={() => window.print()} className="btn btn-ghost no-print mt-4 w-full">
+        Imprimir comprobante
+      </button>
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-sm text-ink-soft">{label}</span>
+      <span className="money text-sm text-ink">{value}</span>
     </div>
   );
 }

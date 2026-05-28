@@ -9,16 +9,6 @@
 
 export type UserRole = 'admin' | 'conductor' | 'socio';
 
-export interface User {
-  userId: string;
-  email: string;
-  passwordHash: string;
-  role: UserRole;
-  name: string;
-  createdAt: string; // ISO8601
-  companyId: string | null;
-}
-
 export interface JWTPayload {
   userId: string;
   role: UserRole;
@@ -142,16 +132,6 @@ export interface JwtUser {
   mustChangePassword?: boolean;
 }
 
-export interface AppConfig {
-  appName: string;
-  version: string;
-  daily_config: DailyConfig;
-  users: User[];
-  companies: Company[];
-  shifts: Shift[];
-  snapshots: ShiftSnapshot[];
-}
-
 // ============================================================================
 // RESPUESTAS DE API
 // ============================================================================
@@ -209,6 +189,20 @@ export interface AuditShiftRow {
 export interface AuditFilters {
   from?: string;
   to?: string;
+}
+
+export interface AuditEntry {
+  id?: string;
+  timestamp?: string;
+  yyyymm?: string;
+  user_id?: string;
+  user_email?: string;
+  user_role?: 'conductor' | 'admin' | 'socio';
+  action: string;
+  entity: string;
+  entity_id?: string;
+  summary: string;
+  metadata?: Record<string, unknown>;
 }
 
 export interface User {

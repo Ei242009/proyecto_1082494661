@@ -1,34 +1,75 @@
-import { getSystemMode } from '@/lib/dataService';
+import { getDashboardData } from '@/lib/dataService';
+import { formatCurrency } from '@/lib/dateUtils';
+
+export const dynamic = 'force-dynamic';
+
+function Kpi({ label, value, tone = 'ink', i }: { label: string; value: string; tone?: 'ink' | 'pos' | 'neg' | 'warn'; i: number }) {
+  const toneClass = tone === 'pos' ? 'text-pos' : tone === 'neg' ? 'text-neg' : tone === 'warn' ? 'text-warn' : 'text-ink';
+  return (
+    <article className="reveal ticket p-4" style={{ ['--i' as string]: i }}>
+      <p className="eyebrow">{label}</p>
+      <p className={`money mt-2 text-2xl ${toneClass}`}>{value}</p>
+    </article>
+  );
+}
 
 export default async function DashboardPage() {
-  const mode = getSystemMode();
+  const [day, week, month] = await Promise.all([
+    getDashboardData('day'),
+    getDashboardData('week'),
+    getDashboardData('month'),
+  ]);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
-      <div className="mb-6 rounded-[20px] border border-stone-200 bg-white p-5 shadow-sm">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-amber-700">Dashboard</p>
-            <h1 className="mt-2 text-2xl font-semibold text-stone-900">Resumen de la propietaria</h1>
+      {/* Hero: recaudo del día */}
+      <section className="reveal ticket overflow-hidden" style={{ ['--i' as string]: 0 }}>
+        <div className="ticket-band" />
+        <div className="px-6 pt-6">
+          <div className="flex items-center justify-between">
+            <p className="eyebrow">Recaudo de hoy</p>
+            {day.pendingExpensesCount > 0 ? (
+              <span className="badge badge-warn">{day.pendingExpensesCount} pendiente{day.pendingExpensesCount > 1 ? 's' : ''}</span>
+            ) : (
+              <span className="badge badge-pos">Al día</span>
+            )}
           </div>
-          <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-900">
-            Modo {mode}
-          </span>
+          <p className="money mt-2 text-5xl text-ink">{formatCurrency(day.totalGrossIncome)}</p>
+          <p className="mt-2 text-sm text-ink-soft">
+            {day.closedShiftsCount} turno{day.closedShiftsCount === 1 ? '' : 's'} cerrado{day.closedShiftsCount === 1 ? '' : 's'} hoy.
+          </p>
         </div>
+        <div className="tear mt-5" />
+        <div className="grid grid-cols-3 divide-x divide-line px-2 py-4 text-center">
+          <div>
+            <p className="eyebrow">Tarifa</p>
+            <p className="money mt-1 text-base text-ink-soft">{formatCurrency(day.totalDailyFee)}</p>
+          </div>
+          <div>
+            <p className="eyebrow">Gastos</p>
+            <p className="money mt-1 text-base text-ink-soft">{formatCurrency(day.totalApprovedExpenses)}</p>
+          </div>
+          <div>
+            <p className="eyebrow">Utilidad</p>
+            <p className={`money mt-1 text-base ${day.netIncome < 0 ? 'money-neg' : 'money-pos'}`}>
+              {formatCurrency(day.netIncome)}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Acumulados */}
+      <div className="mt-5 flex items-center gap-2">
+        <span className="h-px flex-1 bg-line-strong" />
+        <p className="eyebrow">Acumulado</p>
+        <span className="h-px flex-1 bg-line-strong" />
       </div>
 
-      <section className="grid gap-4">
-        <article className="rounded-[20px] border border-stone-200 bg-white p-5 shadow-sm">
-          <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Ingresos del día</p>
-          <p className="mt-3 text-3xl font-semibold text-stone-900">$0</p>
-          <p className="mt-2 text-sm text-stone-500">Aún no hay datos reales, pero el diseño permite lectura clara en 375px.</p>
-        </article>
-
-        <article className="rounded-[20px] border border-stone-200 bg-white p-5 shadow-sm">
-          <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Gastos pendientes</p>
-          <p className="mt-3 text-3xl font-semibold text-stone-900">0</p>
-          <p className="mt-2 text-sm text-stone-500">El badge en la barra inferior se actualiza con el conteo real.</p>
-        </article>
+      <section className="mt-4 grid grid-cols-2 gap-4">
+        <Kpi i={1} label="Utilidad · semana" value={formatCurrency(week.netIncome)} tone={week.netIncome < 0 ? 'neg' : 'pos'} />
+        <Kpi i={2} label="Utilidad · mes" value={formatCurrency(month.netIncome)} tone={month.netIncome < 0 ? 'neg' : 'pos'} />
+        <Kpi i={3} label="Recaudo · mes" value={formatCurrency(month.totalGrossIncome)} />
+        <Kpi i={4} label="Turnos · mes" value={String(month.closedShiftsCount)} />
       </section>
     </main>
   );

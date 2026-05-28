@@ -4,7 +4,7 @@ import { verifyUserJwt } from '@/lib/auth';
 import { approveExpense, ExpenseNotFoundError } from '@/lib/dataService';
 
 interface Params {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export async function POST(request: Request, context: Params) {
@@ -24,7 +24,8 @@ export async function POST(request: Request, context: Params) {
   }
 
   try {
-    const expense = await approveExpense(context.params.id, user.userId);
+    const { id } = await context.params;
+    const expense = await approveExpense(id, user.userId);
     return NextResponse.json(expense, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     if (error instanceof ExpenseNotFoundError) {

@@ -1,22 +1,28 @@
 import type { Metadata } from "next";
-import { Poppins, Nunito } from "next/font/google";
+import { Bricolage_Grotesque, Archivo, Space_Mono } from "next/font/google";
 import "./globals.css";
 
-const poppins = Poppins({
-  variable: "--font-display",
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-bricolage",
   subsets: ["latin"],
-  weight: ["400", "600", "700"],
+  weight: ["400", "600", "700", "800"],
 });
 
-const nunito = Nunito({
-  variable: "--font-secondary",
+const archivo = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
-  weight: ["300", "400", "600"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const spaceMono = Space_Mono({
+  variable: "--font-spacemono",
+  subsets: ["latin"],
+  weight: ["400", "700"],
 });
 
 export const metadata: Metadata = {
-  title: 'BusetaApp — Login',
-  description: 'Aplicación financiera mobile-first para el sector transporte informal.',
+  title: "BusetaApp — Control financiero de tu ruta",
+  description: "Liquidación diaria de la buseta: turnos, gastos y comprobante digital. Mobile-first.",
 };
 
 export default function RootLayout({
@@ -27,9 +33,9 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${poppins.variable} ${nunito.variable} h-full antialiased`}
+      className={`${bricolage.variable} ${archivo.variable} ${spaceMono.variable} h-full`}
     >
-      <body className="min-h-full flex flex-col bg-bg text-text">{children}</body>
+      <body className="min-h-full">{children}</body>
     </html>
   );
 }

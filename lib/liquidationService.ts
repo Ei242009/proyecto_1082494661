@@ -1,99 +1,87 @@
-import fs from 'fs';
-import path from 'path';
-import { SeedDataSchema } from './validators';
-import type { LiquidationResult, ReceiptData, Shift, Expense, SeedData } from './types';
+/**
+ * lib/liquidationService.ts — Cálculo de Utilidad Neta y comprobante.
+ * Lee de Supabase. La UN SIEMPRE se calcula en el servidor (RN-08, RNF-04).
+ */
+import { getSupabaseAdmin } from './supabase';
+import type { LiquidationResult, ReceiptData } from './types';
 
-function getShiftsFilePath(): string {
-  return path.join(process.cwd(), 'data', 'shifts.json');
+function num(value: unknown): number {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') return Number.parseFloat(value);
+  return 0;
 }
 
-function getExpensesFilePath(): string {
-  return path.join(process.cwd(), 'data', 'expenses.json');
-}
-
-function getSeedFilePath(): string {
-  return path.join(process.cwd(), 'data', 'seed.json');
-}
-
-function readJsonFileSync<T>(filePath: string): T {
-  const raw = fs.readFileSync(filePath, 'utf-8');
-  return JSON.parse(raw) as T;
-}
-
-function readSeedData(): SeedData {
-  const seed = readJsonFileSync<unknown>(getSeedFilePath());
-  return SeedDataSchema.parse(seed);
-}
-
-function readShiftsFromFile(): Shift[] {
-  if (!fs.existsSync(getShiftsFilePath())) {
-    return [];
-  }
-  return readJsonFileSync<Shift[]>(getShiftsFilePath());
-}
-
-function readExpensesFromFile(): Expense[] {
-  if (!fs.existsSync(getExpensesFilePath())) {
-    return [];
-  }
-  return readJsonFileSync<Expense[]>(getExpensesFilePath());
-}
-
-function getShiftById(shiftId: string): Shift | null {
-  const shifts = readShiftsFromFile();
-  return shifts.find((shift) => shift.id === shiftId) ?? null;
-}
-
+/**
+ * Calcula la Utilidad Neta del turno. Solo cuenta gastos con status = 'APROBADO'.
+ * UN = (IB - Tarifa Diaria) - Σ Gastos Aprobados
+ */
 export async function calculateNetIncome(shiftId: string): Promise<LiquidationResult> {
-  const shift = getShiftById(shiftId);
-  if (!shift) {
-    throw new Error('Shift not found');
-  }
+  const supabase = getSupabaseAdmin();
 
-  const allExpenses = readExpensesFromFile();
-  const approvedExpenses = allExpenses.filter(
-    (expense) => expense.shift_id === shiftId && expense.status === 'APROBADO',
-  );
+  const { data: shiftRow, error: shiftError } = await supabase
+    .from('shifts')
+    .select('gross_income, daily_fee_snapshot')
+    .eq('id', shiftId)
+    .maybeSingle();
+  if (shiftError) throw new Error(`calculateNetIncome: ${shiftError.message}`);
+  if (!shiftRow) throw new Error('Shift not found');
 
-  const totalApproved = approvedExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const basePostFee = shift.gross_income - shift.daily_fee_snapshot;
-  const netIncome = basePostFee - totalApproved;
+  const { data: expRows, error: expError } = await supabase
+    .from('expenses')
+    .select('id, category, amount, description, created_at')
+    .eq('shift_id', shiftId)
+    .eq('status', 'APROBADO')
+    .order('created_at', { ascending: true });
+  if (expError) throw new Error(`calculateNetIncome: ${expError.message}`);
+
+  const approved = (expRows ?? []).map((e) => ({
+    id: e.id as string,
+    category: e.category as string,
+    amount: num(e.amount),
+    description: (e.description as string) ?? '',
+    created_at: e.created_at as string,
+  }));
+
+  const grossIncome = num(shiftRow.gross_income);
+  const dailyFee = num(shiftRow.daily_fee_snapshot);
+  const totalApproved = approved.reduce((sum, e) => sum + e.amount, 0);
+  const basePostFee = grossIncome - dailyFee;
 
   return {
-    gross_income: shift.gross_income,
-    daily_fee_snapshot: shift.daily_fee_snapshot,
+    gross_income: grossIncome,
+    daily_fee_snapshot: dailyFee,
     base_post_fee: basePostFee,
     total_approved_expenses: totalApproved,
-    net_income: netIncome,
-    approved_expenses: approvedExpenses.map((expense) => ({
-      id: expense.id,
-      category: expense.category,
-      amount: expense.amount,
-      description: expense.description,
-      created_at: expense.created_at,
-    })),
+    net_income: basePostFee - totalApproved,
+    approved_expenses: approved,
   };
 }
 
+/**
+ * Construye el comprobante digital de liquidación del turno cerrado.
+ */
 export async function buildReceipt(shiftId: string): Promise<ReceiptData> {
-  const shift = getShiftById(shiftId);
-  if (!shift) {
-    throw new Error('Shift not found');
-  }
+  const supabase = getSupabaseAdmin();
 
-  const seed = readSeedData();
-  const conductorName = seed.users.find((user) => user.id === shift.conductor_id)?.name ?? 'Conductor';
-  const closedByName = shift.closed_by
-    ? seed.users.find((user) => user.id === shift.closed_by)?.name ?? 'Propietaria'
-    : 'Propietaria';
+  const { data: shift, error } = await supabase
+    .from('shifts')
+    .select('conductor_id, closed_by, closed_at')
+    .eq('id', shiftId)
+    .maybeSingle();
+  if (error) throw new Error(`buildReceipt: ${error.message}`);
+  if (!shift) throw new Error('Shift not found');
+
+  const ids = [shift.conductor_id, shift.closed_by].filter(Boolean) as string[];
+  const { data: userRows } = await supabase.from('users').select('id, name').in('id', ids);
+  const userMap = new Map((userRows ?? []).map((u) => [u.id as string, u.name as string]));
 
   const result = await calculateNetIncome(shiftId);
 
   return {
     shiftId,
-    conductor_name: conductorName,
-    closed_by_name: closedByName,
-    closed_at: shift.closed_at ?? new Date().toISOString(),
+    conductor_name: userMap.get(shift.conductor_id as string) ?? 'Conductor',
+    closed_by_name: shift.closed_by ? userMap.get(shift.closed_by as string) ?? 'Propietaria' : 'Propietaria',
+    closed_at: (shift.closed_at as string) ?? new Date().toISOString(),
     gross_income: result.gross_income,
     daily_fee_snapshot: result.daily_fee_snapshot,
     base_post_fee: result.base_post_fee,
@@ -101,10 +89,7 @@ export async function buildReceipt(shiftId: string): Promise<ReceiptData> {
       category: expense.category,
       amount: expense.amount,
       description: expense.description,
-      time: new Date(expense.created_at).toLocaleTimeString('es-CO', {
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
+      time: new Date(expense.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
     })),
     net_income: result.net_income,
   };

@@ -19,16 +19,13 @@ export default function ExpensePanel({ shiftId, expenseLimit }: Props) {
         expenseLimit={expenseLimit}
         onSaved={() => setRefreshKey((current) => current + 1)}
       />
-      <section className="rounded-[20px] border border-stone-200 bg-white p-5 shadow-sm">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Historial</p>
-            <h2 className="mt-2 text-xl font-semibold text-stone-900">Gastos de este turno</h2>
-          </div>
+      <section>
+        <div className="mb-3 flex items-center gap-2">
+          <span className="h-px flex-1 bg-line-strong" />
+          <p className="eyebrow">Gastos del turno</p>
+          <span className="h-px flex-1 bg-line-strong" />
         </div>
-        <div className="mt-5">
-          <ExpenseHistory shiftId={shiftId} refreshKey={refreshKey} />
-        </div>
+        <ExpenseHistory shiftId={shiftId} refreshKey={refreshKey} />
       </section>
     </div>
   );

@@ -4,7 +4,7 @@ import { getShiftByIdForUser } from '@/lib/dataService';
 import { verifyUserJwt } from '@/lib/auth';
 
 interface Params {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export async function GET(request: Request, context: Params) {
@@ -19,7 +19,8 @@ export async function GET(request: Request, context: Params) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
   }
 
-  const shift = await getShiftByIdForUser(context.params.id, user.userId, user.role);
+  const { id } = await context.params;
+  const shift = await getShiftByIdForUser(id, user.userId, user.role);
   if (!shift) {
     return NextResponse.json({ error: 'Not found' }, { status: 404, headers: { 'Cache-Control': 'no-store' } });
   }

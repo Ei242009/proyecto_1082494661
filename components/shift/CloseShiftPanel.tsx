@@ -17,7 +17,6 @@ export default function CloseShiftPanel({ shiftId }: Props) {
     setLoading(true);
     setMessage(null);
     setError(null);
-
     try {
       const response = await fetch(`/api/shifts/${shiftId}/close`, {
         method: 'POST',
@@ -25,25 +24,19 @@ export default function CloseShiftPanel({ shiftId }: Props) {
         body: JSON.stringify({ force }),
       });
       const data = await response.json();
-
       if (!response.ok) {
         setError(data.error || 'No se pudo cerrar el turno.');
         return;
       }
-
       if (data.requiresConfirmation) {
         setPendingInfo({ pendingCount: data.pendingCount ?? 0, pendingTotal: data.pendingTotal ?? 0 });
         return;
       }
-
       if (data.receipt) {
-        setMessage('Turno cerrado correctamente. Redirigiendo al comprobante...');
-        window.setTimeout(() => {
-          window.location.reload();
-        }, 800);
+        setMessage('Turno cerrado. Generando comprobante…');
+        window.setTimeout(() => window.location.reload(), 800);
         return;
       }
-
       setError('Respuesta inesperada del servidor.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error de conexión');
@@ -53,63 +46,33 @@ export default function CloseShiftPanel({ shiftId }: Props) {
   }
 
   return (
-    <div className="rounded-[20px] border border-stone-200 bg-white p-6 shadow-sm">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Cierre financiero</p>
-          <h2 className="mt-2 text-xl font-semibold text-stone-900">Cerrar este turno</h2>
-        </div>
-        <button
-          type="button"
-          onClick={() => handleClose(false)}
-          disabled={loading}
-          className="inline-flex min-h-[48px] items-center justify-center rounded-3xl bg-amber-600 px-5 text-base font-semibold text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-70 no-print"
-        >
-          {loading ? 'Procesando...' : 'Cerrar turno'}
-        </button>
-      </div>
+    <div className="reveal ticket overflow-hidden no-print" style={{ ['--i' as string]: 1 }}>
+      <div className="ticket-band ticket-band-ink" />
+      <div className="p-6">
+        <p className="eyebrow">Cierre financiero</p>
+        <h2 className="font-display mt-1 text-xl font-bold text-ink">Cerrar y liquidar turno</h2>
+        <p className="mt-2 text-sm text-ink-soft">
+          El cálculo se ejecuta en el servidor. Si hay gastos pendientes, te pediremos confirmación antes de excluirlos.
+        </p>
 
-      <p className="mt-4 text-sm text-stone-600">
-        El cierre se ejecuta en el servidor. Si hay gastos pendientes, te pedirá confirmación antes de excluirlos del cálculo.
-      </p>
-
-      {pendingInfo ? (
-        <div className="mt-6 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          <p className="font-semibold">Advertencia:</p>
-          <p>Hay {pendingInfo.pendingCount} gasto(s) pendiente(s) por un total de {formatCurrency(pendingInfo.pendingTotal)}.</p>
-          <p>Si cierras ahora, estos gastos quedarán excluidos del cálculo final.</p>
-          <div className="mt-4 flex gap-3 flex-col sm:flex-row">
-            <button
-              type="button"
-              onClick={() => handleClose(true)}
-              disabled={loading}
-              className="inline-flex min-h-[48px] w-full items-center justify-center rounded-3xl bg-emerald-600 px-4 text-base font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              Confirmar cierre
-            </button>
-            <button
-              type="button"
-              onClick={() => setPendingInfo(null)}
-              disabled={loading}
-              className="inline-flex min-h-[48px] w-full items-center justify-center rounded-3xl border border-stone-300 bg-white px-4 text-base font-semibold text-stone-900 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              Esperar revisión
-            </button>
+        {!pendingInfo ? (
+          <button type="button" onClick={() => handleClose(false)} disabled={loading} className="btn btn-primary mt-5 w-full">
+            {loading ? 'Procesando…' : 'Cerrar turno'}
+          </button>
+        ) : (
+          <div className="mt-5 rounded-xl border border-warn/30 bg-warn-tint p-4 text-sm text-warn">
+            <p className="font-bold">Hay {pendingInfo.pendingCount} gasto(s) pendiente(s)</p>
+            <p className="mt-1">Total {formatCurrency(pendingInfo.pendingTotal)}. Si cierras ahora, quedarán excluidos del cálculo.</p>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <button type="button" onClick={() => handleClose(true)} disabled={loading} className="btn btn-pos">Cerrar igual</button>
+              <button type="button" onClick={() => setPendingInfo(null)} disabled={loading} className="btn btn-ghost">Esperar</button>
+            </div>
           </div>
-        </div>
-      ) : null}
+        )}
 
-      {message ? (
-        <div className="mt-4 rounded-3xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          {message}
-        </div>
-      ) : null}
-
-      {error ? (
-        <div className="mt-4 rounded-3xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          {error}
-        </div>
-      ) : null}
+        {message ? <div className="mt-4 rounded-xl border border-pos/30 bg-pos-tint px-4 py-3 text-sm text-pos">{message}</div> : null}
+        {error ? <div className="mt-4 rounded-xl border border-neg/30 bg-neg-tint px-4 py-3 text-sm text-neg">{error}</div> : null}
+      </div>
     </div>
   );
 }

@@ -11,62 +11,23 @@ export const LoginRequestSchema = z.object({
 
 export type LoginRequestZod = z.infer<typeof LoginRequestSchema>;
 
-export const UserSchema = z.object({
-  userId: z.string().uuid(),
-  email: z.string().email(),
-  passwordHash: z.string(),
-  role: z.enum(['admin', 'conductor', 'socio']),
-  name: z.string().min(2),
-  createdAt: z.string().datetime(),
-  companyId: z.string().uuid().nullable(),
-});
-
-export type UserZod = z.infer<typeof UserSchema>;
-
 // ============================================================================
 // CONFIGURACIÓN
 // ============================================================================
 
 export const DailyConfigSchema = z.object({
-  tarifa: z.number().positive(),
-  limiteGasto: z.number().positive(),
-  updatedAt: z.string().datetime(),
-  updatedBy: z.string(),
+  daily_fee: z.number().min(0),
+  expense_limit: z.number().min(0),
 });
 
-export type DailyConfigZod = z.infer<typeof DailyConfigSchema>;
-
-// ============================================================================
-// GASTOS
-// ============================================================================
-
-export const ExpenseSchema = z.object({
-  categoria: z.enum(['gasolina', 'comida', 'mantenimiento', 'otro']),
-  monto: z.number().positive('Monto debe ser positivo'),
-  descripcion: z.string().min(3, 'Descripción debe tener al menos 3 caracteres'),
+export const UpdateDailyConfigSchema = z.object({
+  daily_fee: z.number().positive(),
+  expense_limit: z.number().positive(),
 });
-
-export type ExpenseZod = z.infer<typeof ExpenseSchema>;
 
 // ============================================================================
 // SEED
 // ============================================================================
-
-export const SeedDataSchema = z.object({
-  version: z.string(),
-  daily_config: DailyConfigSchema,
-  users: z.array(UserSchema),
-  companies: z.array(
-    z.object({
-      companyId: z.string().uuid(),
-      name: z.string(),
-      ownerEmail: z.string().email(),
-      createdAt: z.string().datetime(),
-    })
-  ),
-  shifts: z.array(z.any()), // Deferred
-  snapshots: z.array(z.any()), // Deferred
-});
 
 export const SeedUserSchema = z.object({
   id: z.string(),
@@ -76,32 +37,21 @@ export const SeedUserSchema = z.object({
   role: z.enum(['admin', 'conductor', 'socio']),
 });
 
-export const DailyConfigSchema = z.object({
-  daily_fee: z.number().min(0),
-  expense_limit: z.number().min(0),
-});
-
-export const CreateShiftRequestSchema = z.object({
-  gross_income: z.number().positive(),
-});
-
-export const UpdateDailyConfigSchema = z.object({
-  daily_fee: z.number().positive(),
-  expense_limit: z.number().positive(),
-});
-
 export const SeedDataSchema = z.object({
   users: z.array(SeedUserSchema),
   daily_config: DailyConfigSchema,
 });
 
-export const LoginRequestSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
+// ============================================================================
+// TURNOS Y GASTOS
+// ============================================================================
+
+export const CreateShiftRequestSchema = z.object({
+  gross_income: z.number().positive(),
 });
 
 export const AddExpenseRequestSchema = z.object({
-  category: z.string().min(1),
+  category: z.enum(['combustible', 'peaje', 'lavado', 'reparacion', 'otro']),
   amount: z.number().positive(),
   description: z.string().min(3),
 });
@@ -110,10 +60,7 @@ export const RejectExpenseRequestSchema = z.object({
   reason: z.string().min(5),
 });
 
-export type HomeDataZod = z.infer<typeof HomeDataSchema>;
-export type AppConfigZod = z.infer<typeof AppConfigSchema>;
 export type SeedDataZod = z.infer<typeof SeedDataSchema>;
-export type LoginRequestZod = z.infer<typeof LoginRequestSchema>;
 export type CreateShiftRequestZod = z.infer<typeof CreateShiftRequestSchema>;
 export type UpdateDailyConfigRequestZod = z.infer<typeof UpdateDailyConfigSchema>;
 export type AddExpenseRequestZod = z.infer<typeof AddExpenseRequestSchema>;

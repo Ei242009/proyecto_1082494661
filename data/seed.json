@@ -3,7 +3,7 @@
     {
       "id": "admin-1",
       "email": "propietaria@busetaapp.app",
-      "password_hash": "$2a$10$biLk6xJRyHD45/ha3sjyie1GXO6jDB9AFd6xxrRV.2qb65oah8ZqW",
+      "password_hash": "$2a$10$8sdV06NLI.nyXbBZkgU0J.vAakRAoBiX3FcSQKsl3lDtEovt8ennW",
       "name": "Bianeidis (Propietaria)",
       "role": "admin"
     }

@@ -5,7 +5,7 @@ import { addExpense, getExpensesByShiftId, getShiftById, ShiftClosedError, Forbi
 import { AddExpenseRequestSchema } from '@/lib/validators';
 
 interface Params {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export async function GET(request: Request, context: Params) {
@@ -20,12 +20,13 @@ export async function GET(request: Request, context: Params) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
   }
 
-  const shift = await getShiftById(context.params.id);
+  const { id } = await context.params;
+  const shift = await getShiftById(id);
   if (!shift || (user.role === 'conductor' && shift.conductor_id !== user.userId)) {
     return NextResponse.json({ error: 'Not found' }, { status: 404, headers: { 'Cache-Control': 'no-store' } });
   }
 
-  const expenses = await getExpensesByShiftId(context.params.id);
+  const expenses = await getExpensesByShiftId(id);
   return NextResponse.json({ expenses }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
@@ -41,7 +42,8 @@ export async function POST(request: Request, context: Params) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
   }
 
-  const shift = await getShiftById(context.params.id);
+  const { id } = await context.params;
+  const shift = await getShiftById(id);
   if (!shift) {
     return NextResponse.json({ error: 'Not found' }, { status: 404, headers: { 'Cache-Control': 'no-store' } });
   }

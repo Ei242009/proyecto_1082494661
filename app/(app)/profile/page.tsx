@@ -2,6 +2,10 @@ import { cookies } from 'next/headers';
 import { verifyUserJwt } from '@/lib/auth';
 import ChangePasswordForm from '@/components/ChangePasswordForm';
 
+export const dynamic = 'force-dynamic';
+
+const ROLE_LABEL: Record<string, string> = { admin: 'Propietaria', conductor: 'Conductor', socio: 'Socio' };
+
 export default async function ProfilePage() {
   const cookieStore = await cookies();
   const token = cookieStore.get('buseta_session')?.value;
@@ -9,35 +13,41 @@ export default async function ProfilePage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
-      <div className="rounded-[20px] border border-stone-200 bg-white p-5 shadow-sm">
-        <p className="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Perfil</p>
-        <h1 className="mt-3 text-2xl font-semibold text-stone-900">Datos de usuario</h1>
-        {user ? (
-          <div className="mt-5 space-y-6">
-            <div className="rounded-3xl bg-amber-50 p-4">
-              <p className="text-sm text-stone-500">Nombre</p>
-              <p className="mt-1 text-lg font-semibold text-stone-900">{user.email}</p>
-            </div>
-            <div className="rounded-3xl bg-stone-50 p-4">
-              <p className="text-sm text-stone-500">Rol</p>
-              <p className="mt-1 text-lg font-semibold text-stone-900">{user.role}</p>
-            </div>
-
-            {user.mustChangePassword && (
-              <div className="rounded-3xl bg-red-50 border border-red-200 p-4">
-                <p className="text-sm font-medium text-red-800 mb-2">Cambio de contraseña requerido</p>
-                <p className="text-sm text-red-700">
-                  Debes cambiar tu contraseña antes de continuar usando la aplicación.
-                </p>
-              </div>
-            )}
-
-            <ChangePasswordForm />
-          </div>
-        ) : (
-          <p className="mt-5 text-sm text-stone-600">No se encontró información de sesión. Inicia sesión de nuevo.</p>
-        )}
+      <div className="mb-5">
+        <p className="eyebrow">Perfil</p>
+        <h1 className="font-display text-3xl font-extrabold text-ink">Tu cuenta</h1>
       </div>
+
+      {user ? (
+        <div className="space-y-5">
+          <section className="reveal ticket overflow-hidden" style={{ ['--i' as string]: 0 }}>
+            <div className="ticket-band" />
+            <div className="grid grid-cols-2 divide-x divide-line p-5 text-center">
+              <div>
+                <p className="eyebrow">Correo</p>
+                <p className="mt-1 break-all text-sm font-medium text-ink">{user.email}</p>
+              </div>
+              <div>
+                <p className="eyebrow">Rol</p>
+                <p className="mt-1 text-sm font-medium text-ink">{ROLE_LABEL[user.role] ?? user.role}</p>
+              </div>
+            </div>
+          </section>
+
+          {user.mustChangePassword ? (
+            <div className="reveal rounded-2xl border border-warn/30 bg-warn-tint px-4 py-3 text-sm text-warn" style={{ ['--i' as string]: 1 }}>
+              <b>Cambio de contraseña requerido.</b> Debes cambiarla antes de continuar.
+            </div>
+          ) : null}
+
+          <section className="reveal ticket p-6" style={{ ['--i' as string]: 2 }}>
+            <h2 className="font-display mb-4 text-xl font-bold text-ink">Cambiar contraseña</h2>
+            <ChangePasswordForm />
+          </section>
+        </div>
+      ) : (
+        <section className="ticket p-6 text-sm text-ink-soft">No hay sesión activa. Inicia sesión de nuevo.</section>
+      )}
     </main>
   );
 }

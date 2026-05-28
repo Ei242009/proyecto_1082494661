@@ -1,11 +1,12 @@
 /**
- * Data Access Layer — Servicio de lectura de archivos JSON
- * 
- * Módulo centralizado para leer archivos JSON desde la carpeta /data/
- * con tipado genérico estricto mediante TypeScript.
- * 
- * ⚠️ Uso exclusivo desde servidor: API Routes, Server Components, etc.
- * ❌ NO usar en Client Components
+ * lib/dataService.ts — ÚNICO punto de acceso a datos de BusetaApp.
+ *
+ * Modo `live` (Supabase configurado): TODO el dominio + la AUDITORÍA viven en
+ * Supabase Postgres (tablas users, daily_config, shifts, expenses, audit_log).
+ * Modo `seed` (sin Supabase): solo permite login del admin del seed y leer la
+ * configuración por defecto; las escrituras quedan bloqueadas hasta el bootstrap.
+ *
+ * ⚠️ Uso exclusivo desde servidor (API Routes / Server Components).
  */
 
 import fs from 'fs';
@@ -14,16 +15,15 @@ import crypto from 'node:crypto';
 import { hash } from 'bcryptjs';
 import { sendPendingExpenseAlert } from './emailService';
 import { buildReceipt } from './liquidationService';
-import { HomeDataSchema, AppConfigSchema, SeedDataSchema } from './validators';
+import { SeedDataSchema } from './validators';
 import { getPeriodDateRange } from './dateUtils';
+import { getSupabaseAdmin, isSupabaseConfigured } from './supabase';
 import type {
-  AppConfig,
   AddExpenseRequest,
   CreateShiftRequest,
   DailyConfig,
   Expense,
   ExpenseWithShift,
-  HomeData,
   ReceiptData,
   SeedData,
   SeedUser,
@@ -36,12 +36,89 @@ import type {
   User,
   CreateUserRequest,
   CreateUserResponse,
+  AuditEntry,
 } from './types';
 
-/**
- * Lee y parsea un archivo JSON desde la carpeta /data/
- * con tipado genérico estricto.
- */
+// ============================================================================
+// Helpers de coerción (PostgREST devuelve DECIMAL como string)
+// ============================================================================
+
+function num(value: unknown): number {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') return Number.parseFloat(value);
+  return 0;
+}
+
+function bogotaToday(): string {
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Bogota' }).format(new Date());
+}
+
+function bogotaYyyymm(): string {
+  const d = new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Bogota' }).format(new Date());
+  return d.slice(0, 7).replace('-', '');
+}
+
+// ============================================================================
+// Mappers fila → tipo de dominio
+// ============================================================================
+
+interface DbUserRow {
+  id: string;
+  email: string;
+  name: string;
+  role: 'admin' | 'conductor' | 'socio';
+  is_active: boolean;
+  must_change_password: boolean;
+  password_hash?: string;
+  created_at: string;
+}
+
+function mapUser(row: DbUserRow): User {
+  return {
+    id: row.id,
+    email: row.email,
+    name: row.name,
+    role: row.role,
+    is_active: row.is_active,
+    must_change_password: row.must_change_password,
+    password_hash: row.password_hash,
+    created_at: row.created_at,
+  };
+}
+
+function mapShift(row: Record<string, unknown>): Shift {
+  return {
+    id: row.id as string,
+    conductor_id: row.conductor_id as string,
+    shift_date: String(row.shift_date),
+    gross_income: num(row.gross_income),
+    daily_fee_snapshot: num(row.daily_fee_snapshot),
+    status: row.status as Shift['status'],
+    closed_by: (row.closed_by as string | null) ?? null,
+    closed_at: (row.closed_at as string | null) ?? null,
+    created_at: row.created_at as string,
+  };
+}
+
+function mapExpense(row: Record<string, unknown>): Expense {
+  return {
+    id: row.id as string,
+    shift_id: row.shift_id as string,
+    category: row.category as string,
+    amount: num(row.amount),
+    description: (row.description as string) ?? '',
+    status: row.status as Expense['status'],
+    rejection_reason: (row.rejection_reason as string | null) ?? null,
+    approved_by: (row.approved_by as string | null) ?? null,
+    approved_at: (row.approved_at as string | null) ?? null,
+    created_at: row.created_at as string,
+  };
+}
+
+// ============================================================================
+// Lectura de archivos JSON (home / config / seed) — se mantienen
+// ============================================================================
+
 export async function readJsonFile<T>(fileName: string): Promise<T> {
   try {
     const filePath = path.join(process.cwd(), 'data', fileName);
@@ -49,38 +126,19 @@ export async function readJsonFile<T>(fileName: string): Promise<T> {
     return JSON.parse(raw) as T;
   } catch (error) {
     throw new Error(
-      `Failed to read JSON file: data/${fileName}. ` +
-      `Error: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to read JSON file: data/${fileName}. Error: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 }
 
 export function readJsonFileSync<T>(fileName: string): T {
-  try {
-    const filePath = path.join(process.cwd(), 'data', fileName);
-    const raw = fs.readFileSync(filePath, 'utf-8');
-    return JSON.parse(raw) as T;
-  } catch (error) {
-    throw new Error(
-      `Failed to read JSON file synchronously: data/${fileName}. ` +
-      `Error: ${error instanceof Error ? error.message : String(error)}`
-    );
-  }
-}
-
-export async function readHomeData(): Promise<HomeData> {
-  const raw = await readJsonFile<unknown>('home.json');
-  return HomeDataSchema.parse(raw);
-}
-
-export async function readAppConfig(): Promise<AppConfig> {
-  const raw = await readJsonFile<unknown>('config.json');
-  return AppConfigSchema.parse(raw);
+  const filePath = path.join(process.cwd(), 'data', fileName);
+  const raw = fs.readFileSync(filePath, 'utf-8');
+  return JSON.parse(raw) as T;
 }
 
 export async function readSeedData(): Promise<SeedData> {
-  const raw = await readJsonFile<unknown>('seed.json');
-  return SeedDataSchema.parse(raw);
+  return SeedDataSchema.parse(await readJsonFile<unknown>('seed.json'));
 }
 
 export async function findSeedUserByEmail(email: string): Promise<SeedUser | undefined> {
@@ -93,318 +151,234 @@ export async function findSeedUserById(id: string): Promise<SeedUser | undefined
   return seed.users.find((user) => user.id === id);
 }
 
-export async function getSeedAdminEmail(): Promise<string | null> {
-  const seed = await readSeedData();
-  return seed.users.find((user) => user.role === 'admin')?.email ?? null;
-}
-
 export async function readSeedDailyConfig(): Promise<DailyConfig> {
   const seed = await readSeedData();
   return seed.daily_config;
 }
 
-function getExpensesFilePath(): string {
-  return path.join(process.cwd(), 'data', 'expenses.json');
+// ============================================================================
+// Modo del sistema
+// ============================================================================
+
+export function getSystemMode(): 'seed' | 'live' | 'unknown' {
+  if (isSupabaseConfigured()) return 'live';
+  const seedFilePath = path.join(process.cwd(), 'data', 'seed.json');
+  if (fs.existsSync(seedFilePath)) return 'seed';
+  return 'unknown';
 }
 
-function readExpensesFromFile(): Expense[] {
-  const filePath = getExpensesFilePath();
-  if (!fs.existsSync(filePath)) {
-    return [];
+function assertLive(operation: string): void {
+  if (!isSupabaseConfigured()) {
+    throw new Error(`Operación "${operation}" requiere Supabase (modo live). Ejecuta el bootstrap primero.`);
   }
-
-  const raw = fs.readFileSync(filePath, 'utf8');
-  return JSON.parse(raw) as Expense[];
 }
 
-function writeExpensesToFile(expenses: Expense[]): void {
-  const filePath = getExpensesFilePath();
-  fs.writeFileSync(filePath, JSON.stringify(expenses, null, 2), 'utf8');
+// ============================================================================
+// Usuarios (auth)
+// ============================================================================
+
+/** Búsqueda unificada por email. Live: Supabase. Seed: seed.json (solo admin). */
+export async function getUserByEmail(email: string): Promise<User | null> {
+  if (isSupabaseConfigured()) {
+    const { data, error } = await getSupabaseAdmin()
+      .from('users')
+      .select('*')
+      .ilike('email', email)
+      .maybeSingle();
+    if (error) throw new Error(`getUserByEmail: ${error.message}`);
+    return data ? mapUser(data as DbUserRow) : null;
+  }
+  const seedUser = await findSeedUserByEmail(email);
+  if (!seedUser) return null;
+  return {
+    id: seedUser.id,
+    email: seedUser.email,
+    name: seedUser.name,
+    role: seedUser.role,
+    is_active: true,
+    must_change_password: false,
+    password_hash: seedUser.password_hash,
+    created_at: new Date(0).toISOString(),
+  };
 }
 
-export async function getExpensesByShiftId(shiftId: string): Promise<Expense[]> {
-  return readExpensesFromFile().filter((expense) => expense.shift_id === shiftId);
+export async function getUserById(id: string): Promise<User | null> {
+  if (isSupabaseConfigured()) {
+    const { data, error } = await getSupabaseAdmin().from('users').select('*').eq('id', id).maybeSingle();
+    if (error) throw new Error(`getUserById: ${error.message}`);
+    return data ? mapUser(data as DbUserRow) : null;
+  }
+  const seedUser = await findSeedUserById(id);
+  if (!seedUser) return null;
+  return {
+    id: seedUser.id,
+    email: seedUser.email,
+    name: seedUser.name,
+    role: seedUser.role,
+    is_active: true,
+    must_change_password: false,
+    password_hash: seedUser.password_hash,
+    created_at: new Date(0).toISOString(),
+  };
 }
+
+export async function getSeedAdminEmail(): Promise<string | null> {
+  if (isSupabaseConfigured()) {
+    const { data } = await getSupabaseAdmin()
+      .from('users')
+      .select('email')
+      .eq('role', 'admin')
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
+    if (data?.email) return data.email as string;
+  }
+  const seed = await readSeedData();
+  return seed.users.find((user) => user.role === 'admin')?.email ?? null;
+}
+
+export async function getUsers(): Promise<User[]> {
+  if (!isSupabaseConfigured()) return [];
+  const { data, error } = await getSupabaseAdmin()
+    .from('users')
+    .select('*')
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(`getUsers: ${error.message}`);
+  return (data ?? []).map((row) => mapUser(row as DbUserRow));
+}
+
+export async function createUser(data: CreateUserRequest): Promise<CreateUserResponse> {
+  assertLive('createUser');
+  const supabase = getSupabaseAdmin();
+
+  const { data: existing } = await supabase.from('users').select('id').ilike('email', data.email).maybeSingle();
+  if (existing) throw new Error('Ya existe un usuario con ese correo');
+
+  // Contraseña temporal: siempre ≥10 caracteres alfanuméricos (cumple el mínimo del login).
+  const tempPassword = crypto.randomBytes(24).toString('base64').replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
+  const hashedPassword = await hash(tempPassword, 12);
+
+  const { error } = await supabase.from('users').insert({
+    name: data.name,
+    email: data.email,
+    password_hash: hashedPassword,
+    role: data.role,
+    is_active: true,
+    must_change_password: true,
+  });
+  if (error) throw new Error(`createUser: ${error.message}`);
+
+  return { ...data, temp_password: tempPassword };
+}
+
+export async function updateUserPassword(userId: string, hashedPassword: string): Promise<User> {
+  assertLive('updateUserPassword');
+  const { data, error } = await getSupabaseAdmin()
+    .from('users')
+    .update({ password_hash: hashedPassword, must_change_password: false })
+    .eq('id', userId)
+    .select('*')
+    .maybeSingle();
+  if (error) throw new Error(`updateUserPassword: ${error.message}`);
+  if (!data) throw new Error('User not found');
+  return mapUser(data as DbUserRow);
+}
+
+export async function updateUserStatus(id: string, isActive: boolean): Promise<User> {
+  assertLive('updateUserStatus');
+  const { data, error } = await getSupabaseAdmin()
+    .from('users')
+    .update({ is_active: isActive })
+    .eq('id', id)
+    .select('*')
+    .maybeSingle();
+  if (error) throw new Error(`updateUserStatus: ${error.message}`);
+  if (!data) throw new Error('User not found');
+  return mapUser(data as DbUserRow);
+}
+
+// ============================================================================
+// Configuración diaria
+// ============================================================================
+
+export async function getDailyConfig(): Promise<DailyConfig> {
+  if (isSupabaseConfigured()) {
+    const { data, error } = await getSupabaseAdmin()
+      .from('daily_config')
+      .select('daily_fee, expense_limit')
+      .order('id', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw new Error(`getDailyConfig: ${error.message}`);
+    if (data) return { daily_fee: num(data.daily_fee), expense_limit: num(data.expense_limit) };
+  }
+  return readSeedDailyConfig();
+}
+
+export async function updateDailyConfig(data: UpdateDailyConfigRequest, userId?: string): Promise<DailyConfig> {
+  assertLive('updateDailyConfig');
+  const supabase = getSupabaseAdmin();
+  const { data: existing } = await supabase.from('daily_config').select('id').order('id').limit(1).maybeSingle();
+
+  const payload = {
+    daily_fee: data.daily_fee,
+    expense_limit: data.expense_limit,
+    updated_by: userId ?? null,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (existing) {
+    const { error } = await supabase.from('daily_config').update(payload).eq('id', existing.id);
+    if (error) throw new Error(`updateDailyConfig: ${error.message}`);
+  } else {
+    const { error } = await supabase.from('daily_config').insert(payload);
+    if (error) throw new Error(`updateDailyConfig: ${error.message}`);
+  }
+  return { daily_fee: data.daily_fee, expense_limit: data.expense_limit };
+}
+
+// ============================================================================
+// Errores de dominio
+// ============================================================================
 
 export class ExpenseNotFoundError extends Error {}
 export class ShiftClosedError extends Error {}
 export class ForbiddenError extends Error {}
-
-export async function closeShift(
-  shiftId: string,
-  adminId: string,
-  force = false,
-): Promise<{ receipt?: ReceiptData; requiresConfirmation?: true; pendingCount?: number; pendingTotal?: number }> {
-  const shift = await getShiftById(shiftId);
-  if (!shift) {
-    throw new Error('Shift not found');
-  }
-
-  if (shift.status === 'CERRADO') {
-    throw new ShiftClosedError('Shift is already closed');
-  }
-
-  const expenses = await getExpensesByShiftId(shiftId);
-  const pendingExpenses = expenses.filter((expense) => expense.status === 'PENDIENTE');
-
-  if (pendingExpenses.length > 0 && !force) {
-    const pendingTotal = pendingExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-    return {
-      requiresConfirmation: true,
-      pendingCount: pendingExpenses.length,
-      pendingTotal,
-    };
-  }
-
-  const shifts = readShiftsFromFile();
-  const existingShiftIndex = shifts.findIndex((item) => item.id === shiftId);
-  if (existingShiftIndex === -1) {
-    throw new Error('Shift not found');
-  }
-
-  const closedAt = new Date().toISOString();
-  const updatedShift: Shift = {
-    ...shift,
-    status: 'CERRADO',
-    closed_by: adminId,
-    closed_at: closedAt,
-  };
-
-  shifts[existingShiftIndex] = updatedShift;
-  writeShiftsToFile(shifts);
-
-  const receipt = await buildReceipt(shiftId);
-
-  console.info(`Shift ${shiftId} closed by ${adminId}. force=${force}. pendingCount=${pendingExpenses.length}`);
-
-  return { receipt };
-}
-
-export async function addExpense(
-  userId: string,
-  userRole: JwtUser['role'],
-  shiftId: string,
-  data: AddExpenseRequest,
-): Promise<Expense> {
-  const shift = await getShiftById(shiftId);
-  if (!shift) {
-    throw new Error('Shift not found');
-  }
-
-  if (shift.status === 'CERRADO') {
-    throw new ShiftClosedError('Shift is already closed');
-  }
-
-  if (userRole === 'conductor' && shift.conductor_id !== userId) {
-    throw new ForbiddenError('No tienes permiso para agregar gastos a este turno');
-  }
-
-  const config = await getDailyConfig();
-  const status = data.amount > config.expense_limit ? 'PENDIENTE' : 'APROBADO';
-
-  const expense: Expense = {
-    id: crypto.randomUUID(),
-    shift_id: shift.id,
-    category: data.category,
-    amount: data.amount,
-    description: data.description,
-    status,
-    rejection_reason: null,
-    approved_by: null,
-    approved_at: null,
-    created_at: new Date().toISOString(),
-  };
-
-  const expenses = readExpensesFromFile();
-  expenses.push(expense);
-  writeExpensesToFile(expenses);
-
-  if (status === 'PENDIENTE') {
-    const ownerEmail = await getSeedAdminEmail();
-    const conductorName = (await findSeedUserById(shift.conductor_id))?.name ?? 'Conductor';
-    if (ownerEmail) {
-      try {
-        await sendPendingExpenseAlert(ownerEmail, {
-          conductor: conductorName,
-          category: data.category,
-          amount: data.amount,
-          description: data.description,
-        });
-      } catch (error) {
-        console.error('Failed to send pending expense alert:', error instanceof Error ? error.message : error);
-      }
-    } else {
-      console.error('No admin email configured in seed data for pending expense alerts');
-    }
-  }
-
-  return expense;
-}
-
-export async function getPendingExpenses(): Promise<ExpenseWithShift[]> {
-  const allExpenses = readExpensesFromFile();
-  const pendingExpenses = allExpenses.filter((expense) => expense.status === 'PENDIENTE');
-
-  const pendingWithDetail = await Promise.all(
-    pendingExpenses.map(async (expense) => {
-      const shift = await getShiftById(expense.shift_id);
-      const conductorName = shift ? (await findSeedUserById(shift.conductor_id))?.name ?? 'Desconocido' : 'Desconocido';
-      return {
-        ...expense,
-        shift_date: shift?.shift_date ?? '',
-        conductor_name: conductorName,
-      };
-    }),
-  );
-
-  return pendingWithDetail.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-}
-
-export async function approveExpense(id: string, adminId: string): Promise<Expense> {
-  const expenses = readExpensesFromFile();
-  const expenseIndex = expenses.findIndex((expense) => expense.id === id);
-  if (expenseIndex === -1) {
-    throw new ExpenseNotFoundError('Expense not found');
-  }
-
-  const expense = expenses[expenseIndex];
-  if (expense.status !== 'PENDIENTE') {
-    throw new Error('Only pending expenses can be approved');
-  }
-
-  const updatedExpense: Expense = {
-    ...expense,
-    status: 'APROBADO',
-    approved_by: adminId,
-    approved_at: new Date().toISOString(),
-    rejection_reason: null,
-  };
-
-  expenses[expenseIndex] = updatedExpense;
-  writeExpensesToFile(expenses);
-  return updatedExpense;
-}
-
-export async function rejectExpense(id: string, adminId: string, reason: string): Promise<Expense> {
-  const expenses = readExpensesFromFile();
-  const expenseIndex = expenses.findIndex((expense) => expense.id === id);
-  if (expenseIndex === -1) {
-    throw new ExpenseNotFoundError('Expense not found');
-  }
-
-  const expense = expenses[expenseIndex];
-  if (expense.status !== 'PENDIENTE') {
-    throw new Error('Only pending expenses can be rejected');
-  }
-
-  const updatedExpense: Expense = {
-    ...expense,
-    status: 'RECHAZADO',
-    approved_by: adminId,
-    approved_at: new Date().toISOString(),
-    rejection_reason: reason,
-  };
-
-  expenses[expenseIndex] = updatedExpense;
-  writeExpensesToFile(expenses);
-  return updatedExpense;
-}
-
-function getShiftsFilePath(): string {
-  return path.join(process.cwd(), 'data', 'shifts.json');
-}
-
-function readShiftsFromFile(): Shift[] {
-  const filePath = getShiftsFilePath();
-
-  if (!fs.existsSync(filePath)) {
-    return [];
-  }
-
-  const raw = fs.readFileSync(filePath, 'utf8');
-  return JSON.parse(raw) as Shift[];
-}
-
-function writeShiftsToFile(shifts: Shift[]): void {
-  const filePath = getShiftsFilePath();
-  fs.writeFileSync(filePath, JSON.stringify(shifts, null, 2), 'utf8');
-}
-
-export async function getDailyConfig(): Promise<DailyConfig> {
-  return readSeedDailyConfig();
-}
-
-export async function updateDailyConfig(data: UpdateDailyConfigRequest): Promise<DailyConfig> {
-  const seed = await readSeedData();
-  const updated = {
-    ...seed.daily_config,
-    daily_fee: data.daily_fee,
-    expense_limit: data.expense_limit,
-  };
-
-  const filePath = path.join(process.cwd(), 'data', 'seed.json');
-  const updatedSeed: SeedData = {
-    ...seed,
-    daily_config: updated,
-  };
-
-  fs.writeFileSync(filePath, JSON.stringify(updatedSeed, null, 2), 'utf8');
-  return updated;
-}
-
-export async function getTodayShift(conductorId: string): Promise<Shift | null> {
-  const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Bogota' }).format(new Date());
-  const shifts = readShiftsFromFile();
-  return shifts.find((shift) => shift.conductor_id === conductorId && shift.shift_date === today) ?? null;
-}
-
-export async function getShiftById(id: string): Promise<Shift | null> {
-  const shifts = readShiftsFromFile();
-  return shifts.find((shift) => shift.id === id) ?? null;
-}
-
 export class ShiftExistsError extends Error {
   public existingShift: Shift;
-
   constructor(existingShift: Shift) {
     super('Shift already exists for today');
     this.existingShift = existingShift;
   }
 }
 
-export async function createShift(conductorId: string, data: CreateShiftRequest): Promise<Shift> {
-  const config = await getDailyConfig();
-  const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Bogota' }).format(new Date());
-  const shifts = readShiftsFromFile();
+// ============================================================================
+// Turnos
+// ============================================================================
 
-  const existing = shifts.find((shift) => shift.conductor_id === conductorId && shift.shift_date === today);
-  if (existing) {
-    throw new ShiftExistsError(existing);
-  }
+export async function getTodayShift(conductorId: string): Promise<Shift | null> {
+  assertLive('getTodayShift');
+  const { data, error } = await getSupabaseAdmin()
+    .from('shifts')
+    .select('*')
+    .eq('conductor_id', conductorId)
+    .eq('shift_date', bogotaToday())
+    .maybeSingle();
+  if (error) throw new Error(`getTodayShift: ${error.message}`);
+  return data ? mapShift(data) : null;
+}
 
-  const newShift: Shift = {
-    id: crypto.randomUUID(),
-    conductor_id: conductorId,
-    shift_date: today,
-    gross_income: data.gross_income,
-    daily_fee_snapshot: config.daily_fee,
-    status: 'ABIERTO',
-    closed_by: null,
-    closed_at: null,
-    created_at: new Date().toISOString(),
-  };
-
-  shifts.push(newShift);
-  writeShiftsToFile(shifts);
-  return newShift;
+export async function getShiftById(id: string): Promise<Shift | null> {
+  assertLive('getShiftById');
+  const { data, error } = await getSupabaseAdmin().from('shifts').select('*').eq('id', id).maybeSingle();
+  if (error) throw new Error(`getShiftById: ${error.message}`);
+  return data ? mapShift(data) : null;
 }
 
 export async function getShiftByIdForUser(id: string, userId: string, role: string): Promise<Shift | null> {
   const shift = await getShiftById(id);
   if (!shift) return null;
-  if (role === 'conductor' && shift.conductor_id !== userId) {
-    return null;
-  }
+  if (role === 'conductor' && shift.conductor_id !== userId) return null;
   return shift;
 }
 
@@ -413,214 +387,406 @@ export async function isShiftClosed(shiftId: string): Promise<boolean> {
   return shift?.status === 'CERRADO';
 }
 
+export async function createShift(conductorId: string, data: CreateShiftRequest): Promise<Shift> {
+  assertLive('createShift');
+  const supabase = getSupabaseAdmin();
+  const config = await getDailyConfig();
+  const today = bogotaToday();
+
+  const { data: inserted, error } = await supabase
+    .from('shifts')
+    .insert({
+      conductor_id: conductorId,
+      shift_date: today,
+      gross_income: data.gross_income,
+      daily_fee_snapshot: config.daily_fee, // RN-01: snapshot al crear
+      status: 'ABIERTO',
+    })
+    .select('*')
+    .maybeSingle();
+
+  if (error) {
+    // RN-07: turno único por conductor por día (violación de UNIQUE)
+    if (error.code === '23505') {
+      const existing = await getTodayShift(conductorId);
+      if (existing) throw new ShiftExistsError(existing);
+    }
+    throw new Error(`createShift: ${error.message}`);
+  }
+
+  return mapShift(inserted!);
+}
+
+export async function closeShift(
+  shiftId: string,
+  adminId: string,
+  force = false,
+): Promise<{ receipt?: ReceiptData; requiresConfirmation?: true; pendingCount?: number; pendingTotal?: number }> {
+  assertLive('closeShift');
+  const supabase = getSupabaseAdmin();
+
+  const shift = await getShiftById(shiftId);
+  if (!shift) throw new Error('Shift not found');
+  if (shift.status === 'CERRADO') throw new ShiftClosedError('Shift is already closed');
+
+  const expenses = await getExpensesByShiftId(shiftId);
+  const pendingExpenses = expenses.filter((expense) => expense.status === 'PENDIENTE');
+
+  if (pendingExpenses.length > 0 && !force) {
+    return {
+      requiresConfirmation: true,
+      pendingCount: pendingExpenses.length,
+      pendingTotal: pendingExpenses.reduce((sum, expense) => sum + expense.amount, 0),
+    };
+  }
+
+  const closedAt = new Date().toISOString();
+  const { error } = await supabase
+    .from('shifts')
+    .update({ status: 'CERRADO', closed_by: adminId, closed_at: closedAt })
+    .eq('id', shiftId)
+    .eq('status', 'ABIERTO');
+  if (error) throw new Error(`closeShift: ${error.message}`);
+
+  const receipt = await buildReceipt(shiftId);
+
+  await recordAudit({
+    user_id: adminId,
+    user_role: 'admin',
+    action: 'close_shift',
+    entity: 'shift',
+    entity_id: shiftId,
+    summary: `Turno ${shift.shift_date} cerrado. IB: $${shift.gross_income} · UN: $${receipt.net_income}`,
+    metadata: { force, pendingExcluded: pendingExpenses.length },
+  });
+
+  return { receipt };
+}
+
+export async function getShifts(filters: AuditFilters = {}): Promise<Shift[]> {
+  assertLive('getShifts');
+  let query = getSupabaseAdmin().from('shifts').select('*').order('shift_date', { ascending: false });
+  if (filters.from) query = query.gte('shift_date', filters.from);
+  if (filters.to) query = query.lte('shift_date', filters.to);
+  const { data, error } = await query;
+  if (error) throw new Error(`getShifts: ${error.message}`);
+  return (data ?? []).map(mapShift);
+}
+
+// ============================================================================
+// Gastos
+// ============================================================================
+
+export async function getExpensesByShiftId(shiftId: string): Promise<Expense[]> {
+  assertLive('getExpensesByShiftId');
+  const { data, error } = await getSupabaseAdmin()
+    .from('expenses')
+    .select('*')
+    .eq('shift_id', shiftId)
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(`getExpensesByShiftId: ${error.message}`);
+  return (data ?? []).map(mapExpense);
+}
+
+export async function addExpense(
+  userId: string,
+  userRole: JwtUser['role'],
+  shiftId: string,
+  data: AddExpenseRequest,
+): Promise<Expense> {
+  assertLive('addExpense');
+  const supabase = getSupabaseAdmin();
+
+  const shift = await getShiftById(shiftId);
+  if (!shift) throw new Error('Shift not found');
+  if (shift.status === 'CERRADO') throw new ShiftClosedError('Shift is already closed'); // RN-04
+  if (userRole === 'conductor' && shift.conductor_id !== userId) {
+    throw new ForbiddenError('No tienes permiso para agregar gastos a este turno'); // RN-06
+  }
+
+  const config = await getDailyConfig();
+  const status: Expense['status'] = data.amount > config.expense_limit ? 'PENDIENTE' : 'APROBADO'; // RN-02
+
+  const { data: inserted, error } = await supabase
+    .from('expenses')
+    .insert({
+      shift_id: shift.id,
+      category: data.category,
+      amount: data.amount,
+      description: data.description,
+      status,
+    })
+    .select('*')
+    .maybeSingle();
+  if (error) throw new Error(`addExpense: ${error.message}`);
+  const expense = mapExpense(inserted!);
+
+  await recordAudit({
+    user_id: userId,
+    user_role: userRole,
+    action: 'add_expense',
+    entity: 'expense',
+    entity_id: expense.id,
+    summary: `Gasto ${data.category} $${data.amount} (${status})`,
+    metadata: { shiftId },
+  });
+
+  if (status === 'PENDIENTE') {
+    const ownerEmail = await getSeedAdminEmail();
+    const conductor = await getUserById(shift.conductor_id);
+    if (ownerEmail) {
+      try {
+        await sendPendingExpenseAlert(ownerEmail, {
+          conductor: conductor?.name ?? 'Conductor',
+          category: data.category,
+          amount: data.amount,
+          description: data.description,
+        });
+      } catch (err) {
+        console.error('Failed to send pending expense alert:', err instanceof Error ? err.message : err);
+      }
+    }
+  }
+
+  return expense;
+}
+
+export async function getPendingExpenses(): Promise<ExpenseWithShift[]> {
+  assertLive('getPendingExpenses');
+  const supabase = getSupabaseAdmin();
+
+  const { data: rows, error } = await supabase
+    .from('expenses')
+    .select('*')
+    .eq('status', 'PENDIENTE')
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(`getPendingExpenses: ${error.message}`);
+
+  const expenses = (rows ?? []).map(mapExpense);
+  if (expenses.length === 0) return [];
+
+  const shiftIds = [...new Set(expenses.map((e) => e.shift_id))];
+  const { data: shiftRows } = await supabase.from('shifts').select('id, shift_date, conductor_id').in('id', shiftIds);
+  const shiftMap = new Map((shiftRows ?? []).map((s) => [s.id as string, s]));
+
+  const conductorIds = [...new Set((shiftRows ?? []).map((s) => s.conductor_id as string))];
+  const { data: userRows } = await supabase.from('users').select('id, name').in('id', conductorIds);
+  const userMap = new Map((userRows ?? []).map((u) => [u.id as string, u.name as string]));
+
+  return expenses.map((expense) => {
+    const shift = shiftMap.get(expense.shift_id);
+    return {
+      ...expense,
+      shift_date: shift ? String(shift.shift_date) : '',
+      conductor_name: shift ? userMap.get(shift.conductor_id as string) ?? 'Desconocido' : 'Desconocido',
+    };
+  });
+}
+
 export async function getPendingExpensesCount(): Promise<number> {
-  const mode = getSystemMode();
-
-  if (mode === 'seed') {
-    const expenses = readExpensesFromFile();
-    return expenses.filter((expense) => expense.status === 'PENDIENTE').length;
-  }
-
-  // En modo live, esta función debe consultar la base de datos.
-  // Aquí se mantiene un stub hasta que el servicio Supabase esté disponible.
-  return 0;
+  if (!isSupabaseConfigured()) return 0;
+  const { count, error } = await getSupabaseAdmin()
+    .from('expenses')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'PENDIENTE');
+  if (error) throw new Error(`getPendingExpensesCount: ${error.message}`);
+  return count ?? 0;
 }
 
-export function getSystemMode(): 'seed' | 'live' | 'unknown' {
-  const hasSupabaseUrl = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim());
-  const seedFilePath = path.join(process.cwd(), 'data', 'seed.json');
+export async function approveExpense(id: string, adminId: string): Promise<Expense> {
+  assertLive('approveExpense');
+  const supabase = getSupabaseAdmin();
 
-  if (hasSupabaseUrl && Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim())) {
-    return 'live';
-  }
+  const { data: current } = await supabase.from('expenses').select('*').eq('id', id).maybeSingle();
+  if (!current) throw new ExpenseNotFoundError('Expense not found');
+  if ((current as Record<string, unknown>).status !== 'PENDIENTE') throw new Error('Only pending expenses can be approved');
 
-  if (fs.existsSync(seedFilePath)) {
-    return 'seed';
-  }
+  const { data, error } = await supabase
+    .from('expenses')
+    .update({ status: 'APROBADO', approved_by: adminId, approved_at: new Date().toISOString(), rejection_reason: null })
+    .eq('id', id)
+    .select('*')
+    .maybeSingle();
+  if (error) throw new Error(`approveExpense: ${error.message}`);
+  const expense = mapExpense(data!);
 
-  return 'unknown';
+  await recordAudit({
+    user_id: adminId,
+    user_role: 'admin',
+    action: 'approve_expense',
+    entity: 'expense',
+    entity_id: id,
+    summary: `Gasto ${expense.category} $${expense.amount} aprobado`,
+  });
+  return expense;
 }
+
+export async function rejectExpense(id: string, adminId: string, reason: string): Promise<Expense> {
+  assertLive('rejectExpense');
+  const supabase = getSupabaseAdmin();
+
+  const { data: current } = await supabase.from('expenses').select('*').eq('id', id).maybeSingle();
+  if (!current) throw new ExpenseNotFoundError('Expense not found');
+  if ((current as Record<string, unknown>).status !== 'PENDIENTE') throw new Error('Only pending expenses can be rejected');
+
+  const { data, error } = await supabase
+    .from('expenses')
+    .update({ status: 'RECHAZADO', approved_by: adminId, approved_at: new Date().toISOString(), rejection_reason: reason })
+    .eq('id', id)
+    .select('*')
+    .maybeSingle();
+  if (error) throw new Error(`rejectExpense: ${error.message}`);
+  const expense = mapExpense(data!);
+
+  await recordAudit({
+    user_id: adminId,
+    user_role: 'admin',
+    action: 'reject_expense',
+    entity: 'expense',
+    entity_id: id,
+    summary: `Gasto ${expense.category} $${expense.amount} rechazado: ${reason}`,
+  });
+  return expense;
+}
+
+// ============================================================================
+// Dashboard y auditoría del socio
+// ============================================================================
 
 export async function getDashboardData(period: 'day' | 'week' | 'month'): Promise<DashboardData> {
+  assertLive('getDashboardData');
+  const supabase = getSupabaseAdmin();
   const { from, to } = getPeriodDateRange(period);
-  const shifts = readShiftsFromFile();
-  const expenses = readExpensesFromFile();
 
-  // Filter closed shifts in the period
-  const closedShifts = shifts.filter(shift =>
-    shift.status === 'CERRADO' &&
-    shift.shift_date >= from &&
-    shift.shift_date <= to
-  );
+  const { data: shiftRows, error } = await supabase
+    .from('shifts')
+    .select('*')
+    .eq('status', 'CERRADO')
+    .gte('shift_date', from)
+    .lte('shift_date', to);
+  if (error) throw new Error(`getDashboardData: ${error.message}`);
 
-  // Calculate totals
-  const totalGrossIncome = closedShifts.reduce((sum, shift) => sum + shift.gross_income, 0);
-  const totalDailyFee = closedShifts.reduce((sum, shift) => sum + shift.daily_fee_snapshot, 0);
+  const closedShifts = (shiftRows ?? []).map(mapShift);
+  const totalGrossIncome = closedShifts.reduce((sum, s) => sum + s.gross_income, 0);
+  const totalDailyFee = closedShifts.reduce((sum, s) => sum + s.daily_fee_snapshot, 0);
 
-  // Get approved expenses for these shifts
-  const shiftIds = closedShifts.map(s => s.id);
-  const approvedExpenses = expenses.filter(expense =>
-    shiftIds.includes(expense.shift_id) && expense.status === 'APROBADO'
-  );
-  const totalApprovedExpenses = approvedExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  let totalApprovedExpenses = 0;
+  if (closedShifts.length > 0) {
+    const { data: expRows } = await supabase
+      .from('expenses')
+      .select('amount')
+      .eq('status', 'APROBADO')
+      .in('shift_id', closedShifts.map((s) => s.id));
+    totalApprovedExpenses = (expRows ?? []).reduce((sum, e) => sum + num(e.amount), 0);
+  }
 
-  const netIncome = totalGrossIncome - totalDailyFee - totalApprovedExpenses;
-
-  // Current pending expenses (not filtered by period, as per spec)
-  const pendingExpensesCount = expenses.filter(expense => expense.status === 'PENDIENTE').length;
+  const pendingExpensesCount = await getPendingExpensesCount();
 
   return {
     totalGrossIncome,
     totalDailyFee,
     totalApprovedExpenses,
-    netIncome,
+    netIncome: totalGrossIncome - totalDailyFee - totalApprovedExpenses,
     closedShiftsCount: closedShifts.length,
     pendingExpensesCount,
   };
 }
 
 export async function getAuditShifts(filters: AuditFilters = {}): Promise<AuditShiftRow[]> {
-  const shifts = readShiftsFromFile();
-  let filteredShifts = shifts;
+  assertLive('getAuditShifts');
+  const supabase = getSupabaseAdmin();
 
-  if (filters.from) {
-    filteredShifts = filteredShifts.filter(shift => shift.shift_date >= filters.from!);
-  }
-  if (filters.to) {
-    filteredShifts = filteredShifts.filter(shift => shift.shift_date <= filters.to!);
-  }
+  let query = supabase.from('shifts').select('*').eq('status', 'CERRADO').order('shift_date', { ascending: false });
+  if (filters.from) query = query.gte('shift_date', filters.from);
+  if (filters.to) query = query.lte('shift_date', filters.to);
+  const { data, error } = await query;
+  if (error) throw new Error(`getAuditShifts: ${error.message}`);
 
-  // Only closed shifts should be visible in the socio/admin audit.
-  filteredShifts = filteredShifts.filter((shift) => shift.status === 'CERRADO');
+  const shifts = (data ?? []).map(mapShift);
+  const conductorIds = [...new Set(shifts.map((s) => s.conductor_id))];
+  const { data: userRows } = await supabase.from('users').select('id, name').in('id', conductorIds);
+  const userMap = new Map((userRows ?? []).map((u) => [u.id as string, u.name as string]));
 
-  // Get conductor names
-  const seed = await readSeedData();
-  const userMap = new Map(seed.users.map(user => [user.id, user.name]));
-
-  return filteredShifts.map(shift => ({
+  // El socio solo ve: fecha, IB, tarifa descontada, estado (sin gastos operativos).
+  return shifts.map((shift) => ({
     date: shift.shift_date,
     conductor_name: userMap.get(shift.conductor_id) ?? 'Desconocido',
     gross_income: shift.gross_income,
     daily_fee_snapshot: shift.daily_fee_snapshot,
     status: shift.status,
-  })).sort((a, b) => b.date.localeCompare(a.date)); // Most recent first
+  }));
 }
 
-// User management functions (for seed mode)
-function getUsersFilePath(): string {
-  return path.join(process.cwd(), 'data', 'users.json');
-}
+// ============================================================================
+// Auditoría técnica (bitácora) — EN SUPABASE (tabla audit_log)
+// ============================================================================
 
-function readUsersFromFile(): User[] {
-  const filePath = getUsersFilePath();
-  if (!fs.existsSync(filePath)) {
-    return [];
+export async function recordAudit(entry: AuditEntry): Promise<void> {
+  if (!isSupabaseConfigured()) return; // en seed mode no hay dónde persistir
+  try {
+    const { error } = await getSupabaseAdmin().from('audit_log').insert({
+      yyyymm: entry.yyyymm ?? bogotaYyyymm(),
+      user_id: entry.user_id ?? null,
+      user_email: entry.user_email ?? null,
+      user_role: entry.user_role ?? null,
+      action: entry.action,
+      entity: entry.entity,
+      entity_id: entry.entity_id ?? null,
+      summary: entry.summary,
+      metadata: entry.metadata ?? null,
+    });
+    if (error) console.error('recordAudit:', error.message);
+  } catch (err) {
+    console.error('recordAudit failed:', err instanceof Error ? err.message : err);
   }
-  const raw = fs.readFileSync(filePath, 'utf8');
-  return JSON.parse(raw) as User[];
 }
 
-function writeUsersToFile(users: User[]): void {
-  const filePath = getUsersFilePath();
-  fs.writeFileSync(filePath, JSON.stringify(users, null, 2), 'utf8');
-}
-
-function writeSeedData(seed: SeedData): void {
-  const filePath = path.join(process.cwd(), 'data', 'seed.json');
-  fs.writeFileSync(filePath, JSON.stringify(seed, null, 2), 'utf8');
-}
-
-export async function getUsers(): Promise<User[]> {
-  return readUsersFromFile();
-}
-
-export async function createUser(data: CreateUserRequest): Promise<CreateUserResponse> {
-  const users = readUsersFromFile();
-
-  // Check if email already exists
-  if (users.some(user => user.email === data.email)) {
-    throw new Error('User with this email already exists');
-  }
-
-  // Generate temp password
-  const tempPassword = crypto.randomBytes(6).toString('base64').replace(/[^a-zA-Z0-9]/g, '').substring(0, 12);
-  const hashedPassword = await hash(tempPassword, 12);
-
-  const newUser: User = {
-    id: crypto.randomUUID(),
-    email: data.email,
-    name: data.name,
-    role: data.role,
-    is_active: true,
-    must_change_password: true,
-    password_hash: hashedPassword,
-    created_at: new Date().toISOString(),
-  };
-
-  users.push(newUser);
-  writeUsersToFile(users);
-
-  return {
-    ...data,
-    temp_password: tempPassword,
-  };
-}
-
-export async function updateUserPassword(userId: string, hashedPassword: string): Promise<User | SeedUser> {
-  const users = readUsersFromFile();
-  const userIndex = users.findIndex((user) => user.id === userId);
-
-  if (userIndex !== -1) {
-    users[userIndex].password_hash = hashedPassword;
-    users[userIndex].must_change_password = false;
-    writeUsersToFile(users);
-    return users[userIndex];
-  }
-
-  const seed = await readSeedData();
-  const seedUserIndex = seed.users.findIndex((user) => user.id === userId);
-  if (seedUserIndex !== -1) {
-    seed.users[seedUserIndex].password_hash = hashedPassword;
-    writeSeedData(seed);
-    return seed.users[seedUserIndex];
-  }
-
-  throw new Error('User not found');
-}
-
-export async function updateUserStatus(id: string, isActive: boolean): Promise<User> {
-  const users = readUsersFromFile();
-  const userIndex = users.findIndex(user => user.id === id);
-  if (userIndex === -1) {
-    throw new Error('User not found');
-  }
-
-  users[userIndex].is_active = isActive;
-  writeUsersToFile(users);
-  return users[userIndex];
+export async function readAuditMonth(yyyymm: string): Promise<AuditEntry[]> {
+  assertLive('readAuditMonth');
+  const { data, error } = await getSupabaseAdmin()
+    .from('audit_log')
+    .select('*')
+    .eq('yyyymm', yyyymm)
+    .order('ts', { ascending: false });
+  if (error) throw new Error(`readAuditMonth: ${error.message}`);
+  return (data ?? []).map((row) => ({
+    id: row.id as string,
+    timestamp: row.ts as string,
+    yyyymm: row.yyyymm as string,
+    user_id: (row.user_id as string) ?? undefined,
+    user_email: (row.user_email as string) ?? undefined,
+    user_role: (row.user_role as AuditEntry['user_role']) ?? undefined,
+    action: row.action as string,
+    entity: row.entity as string,
+    entity_id: (row.entity_id as string) ?? undefined,
+    summary: row.summary as string,
+    metadata: (row.metadata as Record<string, unknown>) ?? undefined,
+  }));
 }
 
 const dataService = {
   readJsonFile,
   readJsonFileSync,
-  readHomeData,
-  readAppConfig,
   readSeedData,
   readSeedDailyConfig,
   findSeedUserByEmail,
   findSeedUserById,
   getSeedAdminEmail,
+  getUserByEmail,
+  getUserById,
   getDailyConfig,
   updateDailyConfig,
   getTodayShift,
   getShiftById,
   getShiftByIdForUser,
+  getShifts,
   getExpensesByShiftId,
   addExpense,
   getPendingExpenses,
   approveExpense,
   rejectExpense,
   createShift,
+  closeShift,
   isShiftClosed,
   getPendingExpensesCount,
   getSystemMode,
@@ -630,6 +796,8 @@ const dataService = {
   createUser,
   updateUserPassword,
   updateUserStatus,
+  recordAudit,
+  readAuditMonth,
 };
 
 export default dataService;

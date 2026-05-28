@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import { formatCurrency } from '@/helpers/formatCurrency';
 
 interface Props {
   initialDailyFee: number;
@@ -13,30 +14,26 @@ export default function DailyConfigForm({ initialDailyFee, initialExpenseLimit }
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
 
+  const feeNum = Number(dailyFee.replace(/[^0-9.]/g, '')) || 0;
+  const limitNum = Number(expenseLimit.replace(/[^0-9.]/g, '')) || 0;
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus('loading');
     setMessage('');
 
-    const body = {
-      daily_fee: Number(dailyFee.replace(/[^0-9.]/g, '')),
-      expense_limit: Number(expenseLimit.replace(/[^0-9.]/g, '')),
-    };
-
     const response = await fetch('/api/daily-config', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ daily_fee: feeNum, expense_limit: limitNum }),
     });
     const data = await response.json();
 
     if (!response.ok) {
       setStatus('error');
       if (response.status === 401) {
-        setMessage('Tu sesión expiró. Redirigiendo a login...');
-        window.setTimeout(() => {
-          window.location.href = '/login';
-        }, 1200);
+        setMessage('Tu sesión expiró. Redirigiendo…');
+        window.setTimeout(() => { window.location.href = '/'; }, 1200);
         return;
       }
       setMessage(data.error || 'No se pudo actualizar la configuración.');
@@ -44,51 +41,45 @@ export default function DailyConfigForm({ initialDailyFee, initialExpenseLimit }
     }
 
     setStatus('success');
-    setMessage('Configuración guardada. Los cambios aplican solo a nuevos turnos.');
+    setMessage('Configuración guardada. Aplica solo a nuevos turnos.');
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 rounded-[20px] border border-stone-200 bg-white p-5 shadow-sm">
-      <div>
-        <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Tarifa diaria</p>
-        <input
-          inputMode="decimal"
-          type="text"
-          value={dailyFee}
-          onChange={(event) => setDailyFee(event.target.value)}
-          className="mt-3 w-full rounded-3xl border border-stone-300 bg-stone-50 px-4 py-4 text-2xl font-semibold text-stone-900 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-100"
-        />
+    <form onSubmit={handleSubmit} className="reveal ticket overflow-hidden">
+      <div className="ticket-band" />
+      <div className="space-y-5 p-6">
+        <div>
+          <label className="label">Tarifa diaria (COP)</label>
+          <div className="relative">
+            <span className="money pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-2xl text-ink-faint">$</span>
+            <input inputMode="decimal" type="text" value={dailyFee} onChange={(e) => setDailyFee(e.target.value)} className="field field-amount pl-9" />
+          </div>
+          <p className="mt-1 font-mono text-[11px] text-ink-faint">{formatCurrency(feeNum)}</p>
+        </div>
+
+        <div>
+          <label className="label">Límite de gasto automático (COP)</label>
+          <div className="relative">
+            <span className="money pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-2xl text-ink-faint">$</span>
+            <input inputMode="decimal" type="text" value={expenseLimit} onChange={(e) => setExpenseLimit(e.target.value)} className="field field-amount pl-9" />
+          </div>
+          <p className="mt-1 font-mono text-[11px] text-ink-faint">{formatCurrency(limitNum)}</p>
+        </div>
+
+        <div className="rounded-xl border border-warn/30 bg-warn-tint px-4 py-3 text-sm text-warn">
+          Los cambios aplican solo a los <b>nuevos turnos</b>. Los turnos ya abiertos conservan su tarifa.
+        </div>
+
+        <button type="submit" disabled={status === 'loading'} className="btn btn-primary w-full">
+          {status === 'loading' ? 'Guardando…' : 'Guardar configuración'}
+        </button>
+
+        {message ? (
+          <p className={`rounded-xl border px-4 py-3 text-sm font-medium ${status === 'success' ? 'border-pos/30 bg-pos-tint text-pos' : 'border-neg/30 bg-neg-tint text-neg'}`}>
+            {message}
+          </p>
+        ) : null}
       </div>
-
-      <div>
-        <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Límite de gasto</p>
-        <input
-          inputMode="decimal"
-          type="text"
-          value={expenseLimit}
-          onChange={(event) => setExpenseLimit(event.target.value)}
-          className="mt-3 w-full rounded-3xl border border-stone-300 bg-stone-50 px-4 py-4 text-2xl font-semibold text-stone-900 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-100"
-        />
-      </div>
-
-      <div className="rounded-3xl bg-amber-50 p-4 text-sm text-stone-700">
-        <p className="font-semibold text-amber-900">Aviso importante</p>
-        <p className="mt-2">Los cambios aplican solo a los nuevos turnos. Los turnos ya abiertos conservan la tarifa anterior.</p>
-      </div>
-
-      <button
-        type="submit"
-        disabled={status === 'loading'}
-        className="inline-flex min-h-[48px] w-full items-center justify-center rounded-3xl bg-amber-600 px-4 text-base font-semibold text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-70"
-      >
-        {status === 'loading' ? 'Guardando...' : 'Guardar configuración'}
-      </button>
-
-      {message ? (
-        <p className={`rounded-3xl border px-4 py-3 text-sm ${status === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-rose-200 bg-rose-50 text-rose-700'}`}>
-          {message}
-        </p>
-      ) : null}
     </form>
   );
 }
