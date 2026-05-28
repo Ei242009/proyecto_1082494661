@@ -1,29 +1,42 @@
-import { cookies } from 'next/headers';
-import { verifyUserJwt } from '@/lib/auth';
 import { getAuditShifts } from '@/lib/dataService';
 import { formatCurrency } from '@/lib/dateUtils';
 
 export const dynamic = 'force-dynamic';
 
-export default async function AuditPage() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('buseta_session')?.value;
-  await verifyUserJwt(token ?? '').catch(() => null);
-
-  const auditItems = await getAuditShifts();
+export default async function AuditPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string; to?: string }>;
+}) {
+  const { from, to } = await searchParams;
+  const auditItems = await getAuditShifts({ from: from || undefined, to: to || undefined });
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
+    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:max-w-5xl">
       <div className="mb-5">
         <p className="eyebrow">Auditoría · solo lectura</p>
         <h1 className="font-display text-3xl font-extrabold text-ink">Turnos cerrados</h1>
         <p className="mt-2 text-sm text-ink-soft">Verifica que la tarifa diaria se descontó en cada turno.</p>
       </div>
 
+      {/* Filtro por rango de fechas (form GET, sin JS) */}
+      <form className="reveal ticket mb-5 flex flex-wrap items-end gap-3 p-4">
+        <div>
+          <label htmlFor="from" className="label">Desde</label>
+          <input id="from" name="from" type="date" defaultValue={from ?? ''} className="field w-auto" />
+        </div>
+        <div>
+          <label htmlFor="to" className="label">Hasta</label>
+          <input id="to" name="to" type="date" defaultValue={to ?? ''} className="field w-auto" />
+        </div>
+        <button type="submit" className="btn btn-primary">Filtrar</button>
+        {(from || to) ? <a href="/audit" className="btn btn-ghost">Limpiar</a> : null}
+      </form>
+
       {auditItems.length === 0 ? (
-        <div className="ticket p-6 text-center text-sm text-ink-soft">Aún no hay turnos cerrados para auditar.</div>
+        <div className="ticket p-6 text-center text-sm text-ink-soft">No hay turnos cerrados en este rango.</div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid gap-3 lg:grid-cols-2">
           {auditItems.map((item, i) => (
             <article key={i} className="reveal ticket overflow-hidden" style={{ ['--i' as string]: i }}>
               <div className="flex items-center justify-between px-5 pt-4">

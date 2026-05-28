@@ -9,7 +9,7 @@ export default async function ShiftsPage() {
   const nameById = new Map(users.map((u) => [u.id, u.name]));
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
+    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:max-w-5xl">
       <div className="mb-5">
         <p className="eyebrow">Operación</p>
         <h1 className="font-display text-3xl font-extrabold text-ink">Turnos</h1>
@@ -19,7 +19,7 @@ export default async function ShiftsPage() {
       {shifts.length === 0 ? (
         <div className="ticket p-6 text-center text-sm text-ink-soft">Todavía no hay turnos registrados.</div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid gap-3 lg:grid-cols-2">
           {shifts.map((shift, i) => {
             const net = shift.gross_income - shift.daily_fee_snapshot;
             return (

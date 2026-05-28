@@ -86,7 +86,7 @@ export default function PendingExpensesClient() {
           </div>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="grid gap-4 lg:grid-cols-2">
           {expenses.map((expense, i) => (
             <PendingExpenseCard key={expense.id} expense={expense} index={i} onApprove={handleApprove} onReject={handleReject} />
           ))}

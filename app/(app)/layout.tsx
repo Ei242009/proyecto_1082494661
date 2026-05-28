@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { verifyUserJwt } from '@/lib/auth';
 import { getPendingExpensesCount } from '@/lib/dataService';
 import BottomNav from '@/components/BottomNav';
+import Sidebar from '@/components/Sidebar';
 
 const ROLE_LABEL: Record<string, string> = {
   admin: 'Propietaria',
@@ -30,8 +31,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen">
-      {/* Tablero de ruta — letrero de destino del bus */}
-      <header className="board sticky top-0 z-40">
+      {/* Sidebar fijo (desktop) */}
+      {role ? <Sidebar role={role} pendingCount={pendingCount} /> : null}
+
+      {/* Tablero de ruta — letrero de destino del bus (solo móvil/tablet) */}
+      <header className="board sticky top-0 z-40 lg:hidden">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
             <span className="grid h-10 w-10 place-items-center rounded-xl bg-marigold text-ink shadow-[inset_0_1px_0_rgba(255,255,255,.4)]">
@@ -57,7 +61,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <div className="min-h-[calc(100vh-72px)] pb-28">{children}</div>
+      <div className="min-h-[calc(100vh-72px)] pb-28 lg:pb-10 lg:pl-64">{children}</div>
       {role ? <BottomNav role={role} pendingCount={pendingCount} /> : null}
     </div>
   );

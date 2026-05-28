@@ -5,6 +5,12 @@ import { UpdateDailyConfigSchema } from '@/lib/validators';
 import { verifyUserJwt } from '@/lib/auth';
 
 export async function GET() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('buseta_session')?.value;
+  const user = token ? await verifyUserJwt(token).catch(() => null) : null;
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
+  }
   const config = await getDailyConfig();
   return NextResponse.json(config, { headers: { 'Cache-Control': 'no-store' } });
 }

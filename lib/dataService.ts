@@ -16,7 +16,7 @@ import { hash } from 'bcryptjs';
 import { sendPendingExpenseAlert } from './emailService';
 import { buildReceipt } from './liquidationService';
 import { SeedDataSchema } from './validators';
-import { getPeriodDateRange } from './dateUtils';
+import { getPeriodDateRange, formatCurrency } from './dateUtils';
 import { getSupabaseAdmin, isSupabaseConfigured } from './supabase';
 import type {
   AddExpenseRequest,
@@ -357,7 +357,7 @@ export class ShiftExistsError extends Error {
 // ============================================================================
 
 export async function getTodayShift(conductorId: string): Promise<Shift | null> {
-  assertLive('getTodayShift');
+  if (!isSupabaseConfigured()) return null;
   const { data, error } = await getSupabaseAdmin()
     .from('shifts')
     .select('*')
@@ -369,7 +369,7 @@ export async function getTodayShift(conductorId: string): Promise<Shift | null> 
 }
 
 export async function getShiftById(id: string): Promise<Shift | null> {
-  assertLive('getShiftById');
+  if (!isSupabaseConfigured()) return null;
   const { data, error } = await getSupabaseAdmin().from('shifts').select('*').eq('id', id).maybeSingle();
   if (error) throw new Error(`getShiftById: ${error.message}`);
   return data ? mapShift(data) : null;
@@ -456,7 +456,7 @@ export async function closeShift(
     action: 'close_shift',
     entity: 'shift',
     entity_id: shiftId,
-    summary: `Turno ${shift.shift_date} cerrado. IB: $${shift.gross_income} · UN: $${receipt.net_income}`,
+    summary: `Turno ${shift.shift_date} cerrado. IB: ${formatCurrency(shift.gross_income)} · UN: ${formatCurrency(receipt.net_income)}`,
     metadata: { force, pendingExcluded: pendingExpenses.length },
   });
 
@@ -464,7 +464,7 @@ export async function closeShift(
 }
 
 export async function getShifts(filters: AuditFilters = {}): Promise<Shift[]> {
-  assertLive('getShifts');
+  if (!isSupabaseConfigured()) return [];
   let query = getSupabaseAdmin().from('shifts').select('*').order('shift_date', { ascending: false });
   if (filters.from) query = query.gte('shift_date', filters.from);
   if (filters.to) query = query.lte('shift_date', filters.to);
@@ -478,7 +478,7 @@ export async function getShifts(filters: AuditFilters = {}): Promise<Shift[]> {
 // ============================================================================
 
 export async function getExpensesByShiftId(shiftId: string): Promise<Expense[]> {
-  assertLive('getExpensesByShiftId');
+  if (!isSupabaseConfigured()) return [];
   const { data, error } = await getSupabaseAdmin()
     .from('expenses')
     .select('*')
@@ -552,7 +552,7 @@ export async function addExpense(
 }
 
 export async function getPendingExpenses(): Promise<ExpenseWithShift[]> {
-  assertLive('getPendingExpenses');
+  if (!isSupabaseConfigured()) return [];
   const supabase = getSupabaseAdmin();
 
   const { data: rows, error } = await supabase
@@ -654,7 +654,9 @@ export async function rejectExpense(id: string, adminId: string, reason: string)
 // ============================================================================
 
 export async function getDashboardData(period: 'day' | 'week' | 'month'): Promise<DashboardData> {
-  assertLive('getDashboardData');
+  if (!isSupabaseConfigured()) {
+    return { totalGrossIncome: 0, totalDailyFee: 0, totalApprovedExpenses: 0, netIncome: 0, closedShiftsCount: 0, pendingExpensesCount: 0 };
+  }
   const supabase = getSupabaseAdmin();
   const { from, to } = getPeriodDateRange(period);
 
@@ -693,7 +695,7 @@ export async function getDashboardData(period: 'day' | 'week' | 'month'): Promis
 }
 
 export async function getAuditShifts(filters: AuditFilters = {}): Promise<AuditShiftRow[]> {
-  assertLive('getAuditShifts');
+  if (!isSupabaseConfigured()) return [];
   const supabase = getSupabaseAdmin();
 
   let query = supabase.from('shifts').select('*').eq('status', 'CERRADO').order('shift_date', { ascending: false });

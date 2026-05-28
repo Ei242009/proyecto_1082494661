@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getDashboardData } from '@/lib/dataService';
 import { formatCurrency } from '@/lib/dateUtils';
 
@@ -20,8 +21,15 @@ export default async function DashboardPage() {
     getDashboardData('month'),
   ]);
 
+  const quickLinks = [
+    { href: '/reports', label: 'Reportes' },
+    { href: '/admin/users', label: 'Usuarios' },
+    { href: '/admin/audit-log', label: 'Bitácora' },
+    { href: '/admin/db-setup', label: 'DB Setup' },
+  ];
+
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
+    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:max-w-5xl">
       {/* Hero: recaudo del día */}
       <section className="reveal ticket overflow-hidden" style={{ ['--i' as string]: 0 }}>
         <div className="ticket-band" />
@@ -65,11 +73,23 @@ export default async function DashboardPage() {
         <span className="h-px flex-1 bg-line-strong" />
       </div>
 
-      <section className="mt-4 grid grid-cols-2 gap-4">
+      <section className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Kpi i={1} label="Utilidad · semana" value={formatCurrency(week.netIncome)} tone={week.netIncome < 0 ? 'neg' : 'pos'} />
         <Kpi i={2} label="Utilidad · mes" value={formatCurrency(month.netIncome)} tone={month.netIncome < 0 ? 'neg' : 'pos'} />
         <Kpi i={3} label="Recaudo · mes" value={formatCurrency(month.totalGrossIncome)} />
         <Kpi i={4} label="Turnos · mes" value={String(month.closedShiftsCount)} />
+      </section>
+
+      {/* Accesos rápidos (móvil): en desktop estos viven en el sidebar */}
+      <section className="mt-6 lg:hidden">
+        <p className="eyebrow mb-3">Más</p>
+        <div className="grid grid-cols-2 gap-3">
+          {quickLinks.map((q, i) => (
+            <Link key={q.href} href={q.href} className="reveal ticket px-4 py-3 text-sm font-semibold text-ink transition active:scale-[.99]" style={{ ['--i' as string]: 5 + i }}>
+              {q.label}
+            </Link>
+          ))}
+        </div>
       </section>
     </main>
   );

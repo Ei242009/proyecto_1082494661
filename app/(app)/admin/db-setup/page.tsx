@@ -5,56 +5,60 @@ import { useState } from 'react';
 export default function DbSetupPage() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
+  const [log, setLog] = useState<string[]>([]);
 
   async function handleBootstrap() {
     setStatus('loading');
     setMessage('');
-
-    const response = await fetch('/api/admin/db-setup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ secret: '' }),
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
+    setLog([]);
+    try {
+      const res = await fetch('/api/admin/db-setup', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      const data = await res.json();
+      if (!res.ok) {
+        setStatus('error');
+        setMessage(data.error || 'Error al ejecutar el bootstrap.');
+        return;
+      }
+      setStatus('success');
+      setLog(data.log ?? []);
+      setMessage('Bootstrap completado.');
+    } catch (err) {
       setStatus('error');
-      setMessage(data.error || 'Error al ejecutar el bootstrap.');
-      return;
+      setMessage(err instanceof Error ? err.message : 'Error de conexión.');
     }
-
-    setStatus('success');
-    setMessage(data.message);
   }
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
-      <div className="rounded-[20px] border border-stone-200 bg-white p-5 shadow-sm">
-        <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Bootstrap</p>
-        <h1 className="mt-3 text-2xl font-semibold text-stone-900">DB Setup</h1>
-        <div className="mt-5 rounded-[20px] border border-amber-100 bg-amber-50 p-4 text-sm text-amber-900">
-          <p>Aplicará 4 migrations y cargará:</p>
-          <ul className="mt-3 space-y-2 list-disc pl-5 text-stone-700">
-            <li>1 usuario admin</li>
-            <li>Configuración inicial: tarifa $80.000</li>
-            <li>Límite de gasto: $200.000</li>
-          </ul>
-        </div>
-
-        <button
-          onClick={handleBootstrap}
-          disabled={status === 'loading'}
-          className="mt-6 min-h-[48px] w-full rounded-3xl bg-amber-600 px-4 text-base font-semibold text-white shadow-sm transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-70"
-        >
-          {status === 'loading' ? 'Ejecutando...' : 'Ejecutar bootstrap'}
-        </button>
-
-        {message ? (
-          <p className={`mt-4 rounded-3xl border px-4 py-3 text-sm ${status === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-rose-200 bg-rose-50 text-rose-700'}`}>
-            {message}
-          </p>
-        ) : null}
+      <div className="mb-5">
+        <p className="eyebrow">Sistema</p>
+        <h1 className="font-display text-3xl font-extrabold text-ink">Bootstrap de base de datos</h1>
       </div>
+
+      <section className="reveal ticket overflow-hidden">
+        <div className="ticket-band ticket-band-ink" />
+        <div className="p-6">
+          <p className="text-sm text-ink-soft">
+            Aplica las migraciones (users, daily_config, shifts, expenses, audit_log) en Supabase y siembra
+            el admin + configuración por defecto. Es idempotente: puedes ejecutarlo varias veces sin riesgo.
+          </p>
+          <button onClick={handleBootstrap} disabled={status === 'loading'} className="btn btn-primary mt-5 w-full">
+            {status === 'loading' ? 'Ejecutando…' : 'Ejecutar bootstrap'}
+          </button>
+
+          {message ? (
+            <p className={`mt-4 rounded-xl border px-4 py-3 text-sm font-medium ${status === 'success' ? 'border-pos/30 bg-pos-tint text-pos' : 'border-neg/30 bg-neg-tint text-neg'}`}>
+              {message}
+            </p>
+          ) : null}
+
+          {log.length > 0 ? (
+            <pre className="mt-4 overflow-x-auto rounded-xl bg-ink p-4 font-mono text-[12px] leading-relaxed text-paper-2">
+              {log.join('\n')}
+            </pre>
+          ) : null}
+        </div>
+      </section>
     </main>
   );
 }

@@ -1,21 +1,31 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
+import { withAuth } from '@/lib/withAuth';
+import { withRole } from '@/lib/withRole';
+import { runMigrations } from '@/lib/pgMigrate';
+import { recordAudit } from '@/lib/dataService';
+import type { JwtUser } from '@/lib/types';
 
-export async function POST(request: Request) {
-  const body = await request.json().catch(() => ({}));
-  const secret = body.secret || process.env.ADMIN_BOOTSTRAP_SECRET;
-
-  if (!secret || secret !== process.env.ADMIN_BOOTSTRAP_SECRET) {
+async function handler(_request: NextRequest, _ctx: unknown, user: JwtUser) {
+  try {
+    const result = await runMigrations();
+    await recordAudit({
+      user_id: user.userId,
+      user_email: user.email,
+      user_role: user.role,
+      action: 'bootstrap',
+      entity: 'system',
+      summary: `Bootstrap ejecutado (${result.log.length} pasos)`,
+      metadata: { log: result.log },
+    });
     return NextResponse.json(
-      { error: 'Invalid bootstrap secret' },
-      { status: 401, headers: { 'Cache-Control': 'no-store' } },
+      { success: true, log: result.log },
+      { headers: { 'Cache-Control': 'no-store' } },
     );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Error ejecutando el bootstrap';
+    return NextResponse.json({ error: message }, { status: 500, headers: { 'Cache-Control': 'no-store' } });
   }
-
-  return NextResponse.json(
-    {
-      success: true,
-      message: 'Las 4 migrations y la configuración inicial se ejecutarían aquí. Cambia el modo a live configurando NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY.',
-    },
-    { headers: { 'Cache-Control': 'no-store' } },
-  );
 }
+
+// Solo la propietaria (admin) puede ejecutar migraciones + seed.
+export const POST = withAuth(withRole(['admin'], handler));

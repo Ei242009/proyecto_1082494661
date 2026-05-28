@@ -22,7 +22,7 @@ export default async function PendingPage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
+    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:max-w-5xl">
       <div className="mb-5">
         <p className="eyebrow">Aprobaciones</p>
         <h1 className="font-display text-3xl font-extrabold text-ink">Gastos por revisar</h1>
