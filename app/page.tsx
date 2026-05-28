@@ -75,10 +75,10 @@ export default function Home() {
         {/* Tiquete de acceso */}
         <div className="reveal ticket overflow-hidden" style={{ ['--i' as string]: 1 }}>
           <div className="ticket-band" />
-          <div className="px-7 pt-7">
-            <div className="flex items-center justify-between">
-              <p className="eyebrow">Tiquete de acceso</p>
-              <p className="font-mono text-[11px] text-ink-faint">N.º 1082494661</p>
+          <div className="px-6 pt-6">
+            <div className="flex items-center justify-between gap-2">
+              <p className="eyebrow truncate">Tiquete de acceso</p>
+              <p className="font-mono text-[10px] text-ink-faint shrink-0">N.º 1082494661</p>
             </div>
             <h2 className="font-display mt-2 text-2xl font-bold text-ink">Aborda tu jornada</h2>
             <p className="mt-1 text-sm text-ink-soft">
@@ -86,7 +86,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="px-7 py-6">
+          <div className="px-6 py-6">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label htmlFor="email" className="label">Correo</label>
@@ -133,9 +133,9 @@ export default function Home() {
           </div>
 
           <div className="tear" />
-          <div className="flex items-center justify-between px-7 py-4">
-            <p className="font-mono text-[11px] uppercase tracking-widest text-ink-faint">Sin registro público</p>
-            <p className="font-mono text-[11px] text-ink-faint">COP · Bogotá</p>
+          <div className="flex items-center justify-between gap-2 px-6 py-4">
+            <p className="font-mono text-[10px] uppercase tracking-wide text-ink-faint truncate">Sin registro público</p>
+            <p className="font-mono text-[10px] text-ink-faint shrink-0">COP · Bogotá</p>
           </div>
         </div>
       </div>

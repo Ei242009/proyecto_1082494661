@@ -111,25 +111,11 @@ body::before {
 .ticket-band-pos    { background: linear-gradient(90deg, #2C9A63, var(--color-pos)); }
 .ticket-band-ink    { background: linear-gradient(90deg, #4A2C16, var(--color-ink)); }
 
-/* Línea de corte perforada con muescas laterales */
+/* Línea de corte perforada (sin muescas: evita manchas sobre fondos oscuros) */
 .tear {
-  position: relative;
   height: 0;
   border-top: 2px dashed var(--color-line-strong);
-  margin: 0 -1px;
 }
-.tear::before, .tear::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  width: 18px; height: 18px;
-  background: var(--color-paper);
-  border: 1px solid var(--color-line);
-  border-radius: 50%;
-  transform: translateY(-50%);
-}
-.tear::before { left: -10px; }
-.tear::after  { right: -10px; }
 
 /* ---------- Tablero de ruta (header oscuro) ---------- */
 .board {
